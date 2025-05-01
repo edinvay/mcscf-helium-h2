@@ -55,6 +55,7 @@
 import sys
 sys.path.append("src/")
 from core import *
+N_orbitals = int(sys.argv[1])
 
 start_calculations = datetime.now()
 print("Day YYYY-MM-DD and Time HH:MM:SS:")
