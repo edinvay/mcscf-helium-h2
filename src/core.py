@@ -24,6 +24,15 @@ from datetime import datetime
 
 
 def calculate_overlap(Bra, Ket):
+    r"""
+    Compute the overlap matrix between two sets of functions.
+
+    Computes a matrix \( S \) with entries
+    \[
+    S_{ij} = \langle \text{Bra}_i | \text{Ket}_j \rangle
+    \]
+    where \(\langle \cdot | \cdot \rangle\) is the inner product.
+    """
     S = np.empty((len(Bra), len(Ket)))
     for i in range(len(Bra)):
         for j in range(len(Ket)):
