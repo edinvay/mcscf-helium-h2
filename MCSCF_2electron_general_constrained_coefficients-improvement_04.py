@@ -67,7 +67,6 @@ print(" ")
 
 precision = 1.0e-4                 
 ZERO = 1.0e-10
-polynomial_order = 9
 
 
 #N_orbitals = 1
@@ -104,25 +103,12 @@ print(" ")
 
 
 
-def name_solution_file(
-    directory_name = 'experiments/' + molecule_name,
-    file_name = 'test'
-):
-    if not os_functions.path.exists(directory_name):
-        os_functions.makedirs(directory_name)
-    file_name = os_functions.path.join(directory_name, file_name)
-    return file_name
-
-
-# In[2]:
 
 
 
 
 # In[3]:
 
-computational_domain_radius = 20
-mra = vp3.MultiResolutionAnalysis(order = polynomial_order, box = [-computational_domain_radius, computational_domain_radius]) # Computational domain in a.u.
 Derivative = vp3.ABGVDerivative(mra, 0.5, 0.5)
 print(mra)
 
@@ -139,6 +125,7 @@ def Laplace(f_tree):
 file_name = 'potential'
 
 name = name_solution_file(
+    directory_name = experiments_directory + molecule_name,
     file_name = file_name
 )
 V = vp3.ZeroTree(mra)
@@ -161,6 +148,7 @@ for n in range(N_orbitals):
     file_name = 'guess_orbital_' + str(n)
     print(file_name)
     name = name_solution_file(
+        directory_name = experiments_directory + molecule_name,
         file_name = file_name
     )
     guess = vp3.ZeroTree(mra)
@@ -863,6 +851,7 @@ improvement = {
 
 file_name = f"general_{N_orbitals}_orbital"
 name = name_solution_file(
+    directory_name = experiments_directory + molecule_name,
     file_name = file_name
 )
 

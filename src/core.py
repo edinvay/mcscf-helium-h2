@@ -6,8 +6,26 @@ import itertools
 import pickle
 from datetime import datetime
 
-# Default value to avoid crashing during import
+
 N_orbitals = None
+experiments_directory = 'experiments/'
+
+polynomial_order = 9
+computational_domain_radius = 20
+
+
+mra = vp3.MultiResolutionAnalysis(order = polynomial_order, box = [-computational_domain_radius, computational_domain_radius]) # Computational domain in a.u.
+
+
+def name_solution_file(
+    directory_name,
+    file_name
+):
+    if not os_functions.path.exists(directory_name):
+        os_functions.makedirs(directory_name)
+    file_name = os_functions.path.join(directory_name, file_name)
+    return file_name
+
 
 def calculate_overlap(Bra, Ket):
     r"""

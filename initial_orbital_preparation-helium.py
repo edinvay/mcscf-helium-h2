@@ -21,23 +21,12 @@ x0 = (0., 0., 0.)
 # Define molecule
 N_orbitals = 2
 molecule_name = 'helium'
-#molecule_name = 'h2'
 
 
-polynomial_order = 9
 
 
-def name_solution_file(
-    directory_name = 'experiments/' + molecule_name,
-    file_name = 'test'
-):
-    if not os_functions.path.exists(directory_name):
-        os_functions.makedirs(directory_name)
-    file_name = os_functions.path.join(directory_name, file_name)
-    return file_name
 
 
-# In[2]:
 
 
 
@@ -45,7 +34,6 @@ def name_solution_file(
 # In[3]:
 
 
-mra = vp3.MultiResolutionAnalysis(order = polynomial_order, box = [-20, 20]) # Computational domain in a.u.
 Derivative = vp3.ABGVDerivative(mra, 0.5, 0.5)
 print(mra)
 
@@ -244,15 +232,9 @@ for n_l_m_Z in n_l_m_Z_list:
     print("projecting...")
     guess = P_mra(f)
     guess.normalize()
-#    print(guess)
     name = name_solution_file(
+        directory_name = experiments_directory + molecule_name,
         file_name = file_name
     )
     guess.saveTree( name )
-
-
-# In[ ]:
-
-
-
 
