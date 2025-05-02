@@ -1,6 +1,6 @@
 from vampyr import vampyr3d as vp3
 import numpy as np
-from scipy.special import erf as scipy_erf
+import scipy
 import os as os_functions
 
 
@@ -28,21 +28,10 @@ def name_solution_file(
 def radius(x):
     return np.sqrt( (x[0] - x0[0])**2 + (x[1] - x0[1])**2 + (x[2] - x0[2])**2 )
 
-def VL(x):
-    r = radius(x)
-    return - 2 * L * Z / r
-
-def f_phi_exact_0(x):
-    r = Z * 2 * L * radius(x)
-    return np.exp(-r)
-
-def f_phi_exact_1(x):
-    minus_r_over_2 = - L * Z * radius(x)
-    return np.exp(minus_r_over_2) * (1 + minus_r_over_2)
 
 
 def U(r):
-    return (scipy_erf(r) / r) + (np.exp(-r**2) / np.sqrt(np.pi))
+    return (scipy.special.erf(r) / r) + (np.exp(-r**2) / np.sqrt(np.pi))
 
 def V_xi(r, L, xi):
     Z = 2

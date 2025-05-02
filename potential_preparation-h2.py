@@ -1,6 +1,6 @@
 from vampyr import vampyr3d as vp3
 import numpy as np
-from scipy.special import erf as scipy_erf
+import scipy
 import os as os_functions
 
 
@@ -33,7 +33,7 @@ def radius(x, x0):
 
 
 def U(r):
-    return (scipy_erf(r) / r) + (np.exp(-r**2) / np.sqrt(np.pi))
+    return (scipy.special.erf(r) / r) + (np.exp(-r**2) / np.sqrt(np.pi))
 
 def V_xi(r, xi):
     return - (1.0 / xi) * U(r / xi)
