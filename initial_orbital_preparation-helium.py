@@ -4,14 +4,12 @@
 # In[1]:
 
 
-from vampyr import vampyr3d as vp3
-import numpy as np
-import matplotlib.pyplot as plt
-import scipy
 from scipy.special import factorial
-#from scipy.special import erf as scipy_erf
-import os as os_functions
-import itertools
+
+import sys
+sys.path.append("src/")
+from core import *
+
 
 
 precision = 1.0e-4                 
@@ -42,24 +40,6 @@ def name_solution_file(
 # In[2]:
 
 
-def calculate_overlap(Bra, Ket):
-    S = np.empty((len(Bra), len(Ket)))
-    for i in range(len(Bra)):
-        for j in range(len(Ket)):
-            S[i, j] = vp3.dot(Bra[i], Ket[j])
-    return S
-
-# Löwdin orthonormalization S^{-1/2} = U * Sigma^{-1/2} * U^T
-def lowdin_orthonormalization(Phi):
-    sigma, U = np.linalg.eigh(calculate_overlap( Phi, Phi ))
-    Sm5 = U @ np.diag(sigma**(-0.5)) @ U.transpose()
-    return Sm5 @ Phi
-
-def inner_product_vector(Phi, Psi):
-    res = np.zeros_like(Phi)
-    for i in range(N_orbitals):
-        res[i] = vp3.dot(Phi[i], Psi[i])
-    return res
 
 
 # In[3]:
@@ -239,7 +219,7 @@ def create_n_l_m_Z(n_max, Z):
     return n_l_m_Z
 
 
-n_max = 3
+n_max = 1
 Z = 5
 
 n_l_m_Z_list = create_n_l_m_Z(n_max, Z)
