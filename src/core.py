@@ -13,8 +13,17 @@ experiments_directory = 'experiments/'
 polynomial_order = 9
 computational_domain_radius = 20
 
+equilibrium_internuclear_distance_h2 = 1.4010784
+
 
 mra = vp3.MultiResolutionAnalysis(order = polynomial_order, box = [-computational_domain_radius, computational_domain_radius]) # Computational domain in a.u.
+
+
+def get_equilibrium_internuclear_distance(molecule_name):
+    equilibrium_internuclear_distance = None
+    if molecule_name == 'h2':
+        equilibrium_internuclear_distance = equilibrium_internuclear_distance_h2
+    return equilibrium_internuclear_distance
 
 
 def name_solution_file(
