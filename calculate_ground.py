@@ -653,22 +653,10 @@ epsilon_matrix = - np.eye(N_orbitals)
 # In[15]:
 
 
-#outer_max = 100
-#inner_max = 15
-#trust_radius = 0.5
-#epsilon_matrix_correction_max = 10
 
 tolerance = np.sqrt(N_orbitals) * precision
 
-def update_trust_radius(norm_f, trust_radius):
-    return 0.5 * norm_f + 0.5 * trust_radius
 
-##################################
-#CHECK:
-#outer_max = 1
-#inner_max = 1
-#epsilon_matrix_correction_max = 0
-##################################
 
 for outer_index in range(outer_max):
     print(f"outer_index = {outer_index}")
@@ -745,8 +733,6 @@ for outer_index in range(outer_max):
         norm_g = norm_SCF(g_iterations[-1])
         if norm_g < tolerance:
             print("Precision is achieved at inner_index =", inner_index)
-            #trust_radius = update_trust_radius(norm_f, trust_radius)
-            #print("trust_radius =", trust_radius)
             break
 
         remove_old_history(x_iterations)

@@ -1,7 +1,7 @@
 #N_orbitals = int(sys.argv[1])
 #molecule_name = str(sys.argv[2])
 
-precision = 1.0e-5                  #default: 1.0e-4
+precision = 1.0e-4                  #default: 1.0e-4
 ZERO = 1.0e-10                      #default: 1.0e-10
 
 MAX_HISTORY_SCF = 3                 #default: 3
