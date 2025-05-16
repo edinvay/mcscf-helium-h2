@@ -13,4 +13,5 @@ epsilon_matrix_correction_max =  0  #default: 10
 
 
 
-molecule_state = 'ground'
+#molecule_state = 'ground'
+molecule_state = 'excited'
