@@ -54,11 +54,6 @@ def calculate_overlap(Bra, Ket):
             S[i, j] = vp3.dot(Bra[i], Ket[j])
     return S
 
-def lowdin_orthonormalization(Phi):
-    sigma, U = np.linalg.eigh(calculate_overlap(Phi, Phi))
-    Sm5 = U @ np.diag(sigma**(-0.5)) @ U.T
-    return Sm5 @ Phi
-
 def inner_product_vector(Phi, Psi):
     res = np.zeros_like(Phi)
     for i in range(N_orbitals):

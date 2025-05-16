@@ -10,3 +10,7 @@ outer_max = 100                     #default: 100
 inner_max = 15                      #default: 15
 trust_radius = 0.5                  #default: 0.5
 epsilon_matrix_correction_max =  0  #default: 10
+
+
+
+molecule_state = 'ground'
