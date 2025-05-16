@@ -4,26 +4,26 @@ from input import molecule_state
 
 
 
-def lowdin_orthonormalization(Phi):
+def lowdin_orthonormalization(Phi, coeff):
     if molecule_state == 'ground':
-        res = lowdin_orthonormalization_ground(Phi)
+        res = lowdin_orthonormalization_ground(Phi, coeff)
     elif molecule_state == 'excited':
-        res = lowdin_orthonormalization_excited(Phi)
+        res = lowdin_orthonormalization_excited(Phi, coeff)
     return res
 
 
-def lowdin_orthonormalization_ground(Phi):
+def lowdin_orthonormalization_ground(Phi, coeff):
     sigma, U = np.linalg.eigh(calculate_overlap(Phi, Phi))
     Sm5 = U @ np.diag(sigma**(-0.5)) @ U.T
-    return Sm5 @ Phi
+    return Sm5 @ Phi, coeff / np.linalg.norm(coeff)
 
 
-def lowdin_orthonormalization_excited(Phi):
+def lowdin_orthonormalization_excited(Phi, coeff):
     print(Ground_orbital, Ground_coeff)
     #sigma, U = np.linalg.eigh(calculate_overlap(Phi, Phi))
     #Sm5 = U @ np.diag(sigma**(-0.5)) @ U.T
     res = Ground_orbital
-    return res
+    return res, Ground_coeff
 
 
 def load_ground():

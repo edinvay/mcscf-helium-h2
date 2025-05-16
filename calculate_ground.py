@@ -169,7 +169,7 @@ for n in range(N_orbitals):
 
 
 Guess_orbital = np.array(Guess_orbital)
-Guess_orbital = lowdin_orthonormalization(Guess_orbital)
+Guess_orbital, coeff = lowdin_orthonormalization(Guess_orbital, 1.0)
 
 
 
@@ -762,11 +762,10 @@ for outer_index in range(outer_max):
         
     previous_Phi = Phi
     Phi = Phi + delta_Phi
-    Phi = lowdin_orthonormalization(Phi)
     epsilon += delta_epsilon_coeff_epsilon_matrix[0]
     coeff   += delta_epsilon_coeff_epsilon_matrix[1]
-    coeff /= np.linalg.norm(coeff)
     epsilon_matrix += delta_epsilon_coeff_epsilon_matrix[2]
+    Phi, coeff = lowdin_orthonormalization(Phi, coeff)
     for ind in range(N_orbitals):
         if epsilon_matrix[ind, ind] >= 0:
             print("POSITIVE ORBITAL ENERGY:", epsilon_matrix[ind, ind])
