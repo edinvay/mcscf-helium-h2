@@ -21,11 +21,12 @@ if molecule_state == 'excited':
     Ground_directory = 'experiments/ground/helium'
 
     # Ground CI coefficients should be in a pkl-file accesible by the key 'coeff' (ommit extension '.pkl'):
-    Ground_coefficient_file_name = 'general_1_orbital'
+    Ground_coefficient_file_name = 'general_2_orbital'
 
     Ground_orbital_file_name = []
 
     # Repeat for each orbital (ommit extension '.tree'):
-    Ground_orbital_file_name.append( 'general_1_orbital_phi_0' )
+    Ground_orbital_file_name.append( 'general_2_orbital_phi_0' )
+    Ground_orbital_file_name.append( 'general_2_orbital_phi_1' )
 
 
