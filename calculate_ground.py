@@ -78,7 +78,7 @@ from input import trust_radius
 from input import epsilon_matrix_correction_max
 
 #from input import molecule_state
-from functions import lowdin_orthonormalization
+from lowdin import lowdin_orthonormalization
 
 
 
