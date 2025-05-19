@@ -13,8 +13,8 @@ epsilon_matrix_correction_max =  0  #default: 10
 
 
 
-#molecule_state = 'ground'
-molecule_state = 'excited'
+molecule_state = 'ground'
+#molecule_state = 'excited'
 
 # Fill in the location to the ground state
 if molecule_state == 'excited':

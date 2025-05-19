@@ -117,20 +117,6 @@ print(" ")
 
 
 
-# In[3]:
-
-Derivative = vp3.ABGVDerivative(mra, 0.5, 0.5)
-print(mra)
-
-P_mra = vp3.ScalingProjector(mra, precision)
-Poisson = vp3.PoissonOperator(mra, precision)
-
-def Laplace(f_tree):
-    return Derivative(Derivative(f_tree, 0), 0) + Derivative(Derivative(f_tree, 1), 1) + Derivative(Derivative(f_tree, 2), 2)
-
-
-# In[4]:
-
 
 file_name = 'potential'
 
@@ -182,96 +168,10 @@ F_NORM = []
 
 
 
-# Consider equation of the form
-# \begin{equation}
-#     -
-#     \frac 12 \Delta \varphi(x)
-#     -
-#     \lambda \varphi(x)
-#     =
-#     \text{RHS}
-# \end{equation}
-# 
-# 
-# For example, the helium Hartree-Fock equation
-# \begin{equation}
-#     -
-#     \frac 12 \Delta \varphi(x)
-#     -
-#     \varepsilon \varphi(x)
-#     =
-#     -
-#     \left(
-#         V_{\text{nuc}}(x) \varphi(x)
-#         +
-#         \int_{\mathbb R^3}
-#         \frac{\varphi^2(y)}{|x - y|} dy \varphi(x)
-#     \right)
-# \end{equation}
-# 
-# We define operator $H_{\lambda}(\text{RHS}, \varphi)$ as
-# \begin{equation}
-#     H_{\lambda}(\text{RHS}, \varphi)
-#     =
-#     \left \{
-#     \begin{aligned}
-#         &
-#         ( - \Delta - 2 \varepsilon )^{-1}
-#         (\text{RHS})
-#         , \quad
-#         &
-#         \varepsilon \leqslant 0
-#         \\
-#         &
-#         ( - \Delta + 1 )^{-1}
-#         (
-#             \text{RHS} + (\varepsilon + 1/2) \varphi
-#         )
-#         , \quad
-#         &
-#         \varepsilon > 0
-#     \end{aligned}
-#     \right.
-# \end{equation}
-# 
-# Therefore, the main equation takes the form
-# \begin{equation}
-#     \varphi
-#     =
-#     2 H_{\lambda}(\text{RHS}, \varphi)
-# \end{equation}
-
-# In[9]:
 
 
-class HelmholtzOperator(object):
-    """
-    lamb : mu = sqrt(-2*lamb)
-    """
-    def __init__(self, mra, lamb, prec):
-        self.mra = mra
-        self.lamb = lamb
-        self.prec = prec
-        self.operator = None
-        self.setup()
 
-    def setup(self):
-        if self.lamb < - ZERO:
-            self.operator = vp3.HelmholtzOperator(mra=self.mra, exp=np.sqrt(-2.0*self.lamb), prec=self.prec)
-        elif self.lamb < ZERO:
-            self.operator = Poisson
-        else:
-            self.operator = vp3.HelmholtzOperator(mra=self.mra, exp=1.0, prec=self.prec)
-
-    def __call__(self, RHS, psi):
-        res = None
-        if self.lamb < ZERO:
-            res = self.operator(RHS)
-        else:
-            res = RHS + (0.5 + self.lamb) * psi
-            res = self.operator(res)
-        return res
-
+from operators import HelmholtzOperator
 
 # $$
 #     \begin{pmatrix}
@@ -593,6 +493,8 @@ def remove_old_history(x):
 #   - Update $w = w + \delta w$
 # 
 
+from operators import Laplace
+from operators import Poisson
 
 def calculate_energy(Phi):
     mult = np.empty((N_orbitals, N_orbitals), dtype=Phi.dtype)
@@ -701,8 +603,6 @@ for outer_index in range(outer_max):
     w_data = [ conv, h_vector, h_matrix, H_matrix, Helmholtz, coefficient_matrix ]
     
     delta_Phi = np.array([ vp3.ZeroTree(mra) for i in range(N_orbitals) ])
-    # It would be itnteresting to try instead something like:
-    #delta_Phi = np.array([ 0.1* Phi[1], 0.1* Phi[0] ])    
     
     
 
