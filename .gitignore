@@ -178,3 +178,4 @@ cython_debug/
 experiments/
 .DS_Store
 src/.DS_Store
+mcscf_env/

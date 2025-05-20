@@ -8,7 +8,8 @@ from datetime import datetime
 
 
 N_orbitals = None
-experiments_directory = 'experiments/'
+#experiments_directory = 'experiments/'
+experiments_directory = '/cluster/projects/nn9830k/mcscf/experiments/'
 
 polynomial_order = 9
 computational_domain_radius = 20

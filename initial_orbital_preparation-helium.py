@@ -6,7 +6,7 @@ from hydrogen_type_orbitals import create_n_l_m_Z
 
 
 
-precision = 1.0e-4                 
+precision = 1.0e-3                 
 
 
 molecule_name = 'helium'
@@ -31,12 +31,13 @@ print(mra)
 P_mra = vp3.ScalingProjector(mra, precision)
 
 
-for n_l_m_Z in n_l_m_Z_list:
+for ind, n_l_m_Z in enumerate(n_l_m_Z_list):
     n = n_l_m_Z[0]
     l = n_l_m_Z[1]
     m = n_l_m_Z[2]
     Z = n_l_m_Z[3]
-    formatted_str = f"n={n}_l={l}_m={m}_Z={Z}"
+    #formatted_str = f"n={n}_l={l}_m={m}_Z={Z}"
+    formatted_str = 'orbital_' + str(ind)
     file_name = 'guess_' + formatted_str
     print(file_name)
     def f(x):
@@ -49,5 +50,6 @@ for n_l_m_Z in n_l_m_Z_list:
         directory_name = experiments_directory + molecule_name,
         file_name = file_name
     )
+    print(name)
     guess.saveTree( name )
 

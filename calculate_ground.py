@@ -135,6 +135,7 @@ name = name_solution_file(
     directory_name = experiments_directory + molecule_name,
     file_name = file_name
 )
+print(name)
 V = vp3.ZeroTree(mra)
 V.loadTree( name ) 
 V.setName( 'potential' ) 
@@ -158,6 +159,7 @@ for n in range(N_orbitals):
         directory_name = experiments_directory + molecule_name,
         file_name = file_name
     )
+    print(name)
     guess = vp3.ZeroTree(mra)
     guess.loadTree( name )
     guess.setName( file_name ) 
