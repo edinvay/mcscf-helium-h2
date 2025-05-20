@@ -4,8 +4,8 @@ from core import *
 from potential_smoothing import smoothed_singularity
 
 
-precision = 1.0e-4          #default: 1.0e-4              
-XI = 0.001                  #default: 0.001
+precision = 1.0e-3          #default: 1.0e-4              
+XI = 0.01                  #default: 0.001
 
 
 molecule_name = 'helium'
