@@ -79,11 +79,14 @@ class CoefficientOptimiser(object):
 
 
     def calculate_excited_projector(self, Phi):
-        overlap = calculate_overlap(Phi, self.Ground_orbital)
-        v = overlap ** 2 @ self.Ground_coeff
+        v = self.ground_vector(Phi)
         P = np.outer(v, v)
         P /= np.trace(P)
         P = np.eye(len(Phi)) - P
         return P
 
 
+    def ground_vector(self, Phi):
+        overlap = calculate_overlap(Phi, self.Ground_orbital)
+        v = overlap ** 2 @ self.Ground_coeff
+        return v
