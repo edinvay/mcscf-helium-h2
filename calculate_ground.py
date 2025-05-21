@@ -267,10 +267,8 @@ def F_SCF(delta_Phi, w, w_data):
     coefficient_matrix = w_data[5]
 
     if molecule_state == 'excited':
-        print("Consider additional elements in w and w_data")
-#        lamb = w[4]
-#        #probably:
-#        v = w_data[6]
+        lamb = w[4]
+        v = w_data[6]
     
     delta_mult = np.empty( (N_orbitals, N_orbitals), dtype = delta_Phi.dtype )
     for i in range(N_orbitals):
@@ -290,7 +288,9 @@ def F_SCF(delta_Phi, w, w_data):
     first_entry = -0.5 * (np.sum(coeff**2) - 1)
     if molecule_state == 'excited':
         print("modify f")
-#        first_entry = np.hstack((first_entry, ...))
+        first_entry = np.hstack((first_entry, 0.0))
+        print(v)
+        print(coefficient_matrix)
     RHS = np.hstack((first_entry, f_vector))
     delta_epsilon_coeff = scipy.linalg.solve(coefficient_matrix, RHS, assume_a="sym")
     delta_coeff = delta_epsilon_coeff[1:]
@@ -448,7 +448,12 @@ for outer_index in range(outer_max):
     epsilon = H_eigenvalue
     coeff = H_eigenvector
         
-    coefficient_matrix = build_coefficient_matrix(coeff, H_matrix, epsilon)    
+    v = None
+    if molecule_state == 'excited':
+        v = CI_optimiser.ground_vector(Phi)
+        print("coeff - v = ", coeff - v)
+
+    coefficient_matrix = build_coefficient_matrix(coeff, H_matrix, epsilon, v)
         
 
     helmholtz_lambda = epsilon_matrix.diagonal() / coeff**2
@@ -458,9 +463,8 @@ for outer_index in range(outer_max):
     w_data = [ conv, h_vector, h_matrix, H_matrix, Helmholtz, coefficient_matrix ]
     
     if molecule_state == 'excited':
-        print("Append to w and w_data:")
         w.append(lamb)
-        w_data.append( CI_optimiser.ground_vector(Phi) )
+        w_data.append(v)
     
     delta_Phi = np.array([ vp3.ZeroTree(mra) for i in range(N_orbitals) ])
     
