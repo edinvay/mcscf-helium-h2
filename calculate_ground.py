@@ -246,42 +246,10 @@ from operators import HelmholtzOperator
 # 
 # 
 
-# In[10]:
 
 
-def build_coefficient_matrix(c, H, epsilon):
-    """
-    Constructs the matrix:
-    
-        (  0     c^T  )
-        (  c  ε - H )
-    
-    Parameters:
-    c : (M+1,) array_like
-    H : (M+1, M+1) array_like
-        Square matrix H.
-    epsilon : float
-    
-    Returns:
-    numpy.ndarray
-        Constructed (M+2, M+2) matrix.
-    """
-    c = np.asarray(c).reshape(-1, 1)  # Ensure c is a column vector
-    H = np.asarray(H)                 # Ensure H is an array
-    M = H.shape[0]                    # Determine M from H
-    
-    if c.shape[0] != M:
-        raise ValueError("Dimension mismatch: c must have the same length as the size of H")
-    
-    # Construct the (M+1, M+1) matrix
-    matrix = np.zeros((M+1, M+1))
-    matrix[0, 1:] = c.T  # First row
-    matrix[1:, 0] = c[:, 0]  # First column
-    matrix[1:, 1:] = epsilon * np.eye(M) - H  # Bottom-right block
-    
-    return matrix
 
-
+from functions import build_coefficient_matrix
 from functions import solve_symmetric_antisymmetric
 
 

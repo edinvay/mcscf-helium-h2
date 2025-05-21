@@ -1,8 +1,60 @@
 import scipy
+import numpy as np
 
 #from core import calculate_overlap
-#import numpy as np
 #from input import molecule_state
+
+
+
+def build_coefficient_matrix(c, H, epsilon, v=None):
+    """
+    Constructs the matrix:
+        If v is None:
+            (  0     c^T  )
+            (  c  ε - H )
+        If v is provided:
+            (  0     0     c^T )
+            (  0     0     v^T )
+            (  c     v   ε - H )
+
+    Parameters:
+    c : (M,) array_like
+    H : (M, M) array_like
+        Square matrix H.
+    epsilon : float
+    v : (M,) array_like or None
+        Optional second vector.
+
+    Returns:
+    numpy.ndarray
+        Constructed (M+1, M+1) or (M+2, M+2) matrix.
+    """
+    c = np.asarray(c).reshape(-1, 1)  # Column vector
+    H = np.asarray(H)
+    M = H.shape[0]
+
+    if c.shape[0] != M or H.shape != (M, M):
+        raise ValueError("Dimension mismatch between c and H")
+
+    if v is None:
+        # Original 1-row/column augmented matrix
+        mat = np.zeros((M+1, M+1))
+        mat[0, 1:] = c.T
+        mat[1:, 0] = c[:, 0]
+        mat[1:, 1:] = epsilon * np.eye(M) - H
+    else:
+        v = np.asarray(v).reshape(-1, 1)
+        if v.shape[0] != M:
+            raise ValueError("Dimension mismatch: v must be the same length as c")
+        # New 2-row/column augmented matrix
+        mat = np.zeros((M+2, M+2))
+        mat[0, 2:] = c.T
+        mat[1, 2:] = v.T
+        mat[2:, 0] = c[:, 0]
+        mat[2:, 1] = v[:, 0]
+        mat[2:, 2:] = epsilon * np.eye(M) - H
+
+    return mat
 
 # The equations for the orbital energy updates $\delta \varepsilon_{kj}$
 # have the following matrix form
