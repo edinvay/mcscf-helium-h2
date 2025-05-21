@@ -409,9 +409,8 @@ epsilon = 0.0
 coeff = None
 epsilon_matrix = - np.eye(N_orbitals)
 
-
-
-# In[15]:
+if molecule_state == 'excited':
+    lamb = 0.0
 
 
 
@@ -457,8 +456,11 @@ for outer_index in range(outer_max):
 
     w = [ Phi, epsilon, coeff, epsilon_matrix ]
     w_data = [ conv, h_vector, h_matrix, H_matrix, Helmholtz, coefficient_matrix ]
+    
     if molecule_state == 'excited':
-        print("append to w and w_data")
+        print("Append to w and w_data:")
+        w.append(lamb)
+        w_data.append( CI_optimiser.ground_vector(Phi) )
     
     delta_Phi = np.array([ vp3.ZeroTree(mra) for i in range(N_orbitals) ])
     
