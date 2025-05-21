@@ -77,7 +77,7 @@ from input import inner_max
 from input import trust_radius
 from input import epsilon_matrix_correction_max
 
-#from input import molecule_state
+from input import molecule_state
 from lowdin import lowdin_orthonormalization
 
 
@@ -265,6 +265,12 @@ def F_SCF(delta_Phi, w, w_data):
     H_matrix  = w_data[3]
     Helmholtz = w_data[4]
     coefficient_matrix = w_data[5]
+
+    if molecule_state == 'excited':
+        print("Consider additional elements in w and w_data")
+#        lamb = w[4]
+#        #probably:
+#        v = w_data[6]
     
     delta_mult = np.empty( (N_orbitals, N_orbitals), dtype = delta_Phi.dtype )
     for i in range(N_orbitals):
@@ -282,6 +288,9 @@ def F_SCF(delta_Phi, w, w_data):
             f_vector[k] += 2.0 * coeff[m] * vp3.dot( delta_mult[k, m] + delta_mult[m, k], conv[k, m] )
 
     first_entry = -0.5 * (np.sum(coeff**2) - 1)
+    if molecule_state == 'excited':
+        print("modify f")
+#        first_entry = np.hstack((first_entry, ...))
     RHS = np.hstack((first_entry, f_vector))
     delta_epsilon_coeff = scipy.linalg.solve(coefficient_matrix, RHS, assume_a="sym")
     delta_coeff = delta_epsilon_coeff[1:]
@@ -448,6 +457,8 @@ for outer_index in range(outer_max):
 
     w = [ Phi, epsilon, coeff, epsilon_matrix ]
     w_data = [ conv, h_vector, h_matrix, H_matrix, Helmholtz, coefficient_matrix ]
+    if molecule_state == 'excited':
+        print("append to w and w_data")
     
     delta_Phi = np.array([ vp3.ZeroTree(mra) for i in range(N_orbitals) ])
     

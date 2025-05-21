@@ -21,13 +21,53 @@ class CoefficientOptimiser(object):
 
 
     def calculate_energy(self, Phi):
+        r"""
+        Compute the lowest eigenvalue and eigenvector of the effective Hamiltonian.
+
+        Depending on the molecular state, this routine either computes the lowest eigenvalue 
+        of the full Hamiltonian (ground state) or of the Hamiltonian projected onto the 
+        excited-state subspace.
+
+        .. math::
+            \text{If } \texttt{molecule\_state} = \text{"ground"}:
+                \quad H_{\text{eff}} = H
+
+            \text{If } \texttt{molecule\_state} = \text{"excited"}:
+                \quad H_{\text{eff}} = P H P
+
+        where :math:`P` is a projector depending on :math:`\Phi`.
+
+        Parameters
+        ----------
+        Phi : array_like
+            Input wavefunction or coefficient matrix.
+        
+        molecule_state : {'ground', 'excited'}
+            Indicates whether to compute the energy in the ground or excited state.
+
+        Returns
+        -------
+        H_eigenvalue : float
+            The lowest eigenvalue of the (projected) Hamiltonian.
+        
+        H_eigenvector : array_like
+            The corresponding normalized eigenvector.
+
+        supplementary_data : tuple
+            Additional data produced by `calculate_energy_data`, ending with the Hamiltonian matrix.
+        """        
+        
         supplementary_data = self.calculate_energy_data(Phi)
         H_matrix = supplementary_data[-1]
+        
         if molecule_state == 'ground':
             H_eigenvalue, H_eigenvector = self.solve_eigenvalue_problem(H_matrix)
-        else:
+        elif molecule_state == 'excited':
             P = self.calculate_excited_projector(Phi)
             H_eigenvalue, H_eigenvector = self.solve_eigenvalue_problem(P @ H_matrix @ P)
+        else:
+            raise ValueError(f"Invalid molecule_state: '{molecule_state}'. Must be 'ground' or 'excited'.")
+        
         return H_eigenvalue, H_eigenvector, supplementary_data
 
 
