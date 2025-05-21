@@ -15,8 +15,9 @@ molecule_name = 'helium'
 
 
 
-n_max = 1
-Z = 5
+n_max = 2
+#Z = 5
+Z = 2
 
 n_l_m_Z_list = create_n_l_m_Z(n_max, Z)
 n_l_m_Z_list[0][-1] = 2

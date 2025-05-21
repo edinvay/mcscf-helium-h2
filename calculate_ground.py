@@ -293,7 +293,7 @@ def F_SCF(delta_Phi, w, w_data):
         print(coefficient_matrix)
     RHS = np.hstack((first_entry, f_vector))
     delta_epsilon_coeff = scipy.linalg.solve(coefficient_matrix, RHS, assume_a="sym")
-    delta_coeff = delta_epsilon_coeff[1:]
+    delta_coeff = delta_epsilon_coeff[-N_orbitals:]
     
     energy_RHS = np.eye(N_orbitals)
     for k in range(N_orbitals):
