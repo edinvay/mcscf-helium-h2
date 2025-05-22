@@ -19,7 +19,7 @@ molecule_state = 'excited'
 # Fill in the location to the ground state
 if molecule_state == 'excited':
     #Ground_directory = 'experiments/ground/helium'
-    Ground_directory = 'experiments/ground/h2'
+    Ground_directory = 'experiments/ground'
 
     # Ground CI coefficients should be in a pkl-file accesible by the key 'coeff' (ommit extension '.pkl'):
     Ground_coefficient_file_name = 'general_3_orbital'
@@ -32,3 +32,12 @@ if molecule_state == 'excited':
     Ground_orbital_file_name.append( 'general_3_orbital_phi_2' )
 
 
+
+    def set_ground_directory(molecule_name):
+        global Ground_directory
+        if molecule_name == 'h2':
+            Ground_directory = 'experiments/ground/h2'
+        elif molecule_name == 'helium':
+            Ground_directory = 'experiments/ground/helium'
+        else:
+            raise ValueError(f"Unknown molecule name: {molecule_name}")

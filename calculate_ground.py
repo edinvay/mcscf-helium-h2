@@ -78,6 +78,9 @@ from input import trust_radius
 from input import epsilon_matrix_correction_max
 
 from input import molecule_state
+if molecule_state == 'excited':
+    import input
+    input.set_ground_directory(molecule_name)
 from lowdin import lowdin_orthonormalization
 
 
