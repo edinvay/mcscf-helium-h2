@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
 # # General case (constrained coefficients)
 # 
 # 
@@ -50,7 +47,6 @@
 # with symmetric matrix coefficients $\varepsilon_{ij}$.
 # 
 
-# In[1]:
 
 import sys
 sys.path.append("src/")
@@ -77,6 +73,12 @@ from input import inner_max
 from input import trust_radius
 from input import epsilon_matrix_correction_max
 
+from input import molecule_state
+if molecule_state == 'excited':
+    import input
+    input.set_ground_directory(molecule_name)
+from lowdin import lowdin_orthonormalization
+
 
 
 print(" ")
@@ -101,9 +103,6 @@ print(" ")
 print("equilibrium_internuclear_distance:")
 print(equilibrium_internuclear_distance)
 print(" ")
-#print("HF_total_energy:")
-#print(HF_total_energy)
-print(" ")
 
 
 
@@ -113,20 +112,6 @@ print(" ")
 
 
 
-
-# In[3]:
-
-Derivative = vp3.ABGVDerivative(mra, 0.5, 0.5)
-print(mra)
-
-P_mra = vp3.ScalingProjector(mra, precision)
-Poisson = vp3.PoissonOperator(mra, precision)
-
-def Laplace(f_tree):
-    return Derivative(Derivative(f_tree, 0), 0) + Derivative(Derivative(f_tree, 1), 1) + Derivative(Derivative(f_tree, 2), 2)
-
-
-# In[4]:
 
 
 file_name = 'potential'
@@ -143,7 +128,6 @@ print(V)
 
 
 
-# In[5]:
 
 
 
@@ -166,7 +150,8 @@ for n in range(N_orbitals):
 
 
 Guess_orbital = np.array(Guess_orbital)
-Guess_orbital = lowdin_orthonormalization(Guess_orbital)
+coeff = np.array( [1.0] * len(Guess_orbital) )
+Guess_orbital, coeff = lowdin_orthonormalization(Guess_orbital, coeff)
 
 
 
@@ -179,96 +164,10 @@ F_NORM = []
 
 
 
-# Consider equation of the form
-# \begin{equation}
-#     -
-#     \frac 12 \Delta \varphi(x)
-#     -
-#     \lambda \varphi(x)
-#     =
-#     \text{RHS}
-# \end{equation}
-# 
-# 
-# For example, the helium Hartree-Fock equation
-# \begin{equation}
-#     -
-#     \frac 12 \Delta \varphi(x)
-#     -
-#     \varepsilon \varphi(x)
-#     =
-#     -
-#     \left(
-#         V_{\text{nuc}}(x) \varphi(x)
-#         +
-#         \int_{\mathbb R^3}
-#         \frac{\varphi^2(y)}{|x - y|} dy \varphi(x)
-#     \right)
-# \end{equation}
-# 
-# We define operator $H_{\lambda}(\text{RHS}, \varphi)$ as
-# \begin{equation}
-#     H_{\lambda}(\text{RHS}, \varphi)
-#     =
-#     \left \{
-#     \begin{aligned}
-#         &
-#         ( - \Delta - 2 \varepsilon )^{-1}
-#         (\text{RHS})
-#         , \quad
-#         &
-#         \varepsilon \leqslant 0
-#         \\
-#         &
-#         ( - \Delta + 1 )^{-1}
-#         (
-#             \text{RHS} + (\varepsilon + 1/2) \varphi
-#         )
-#         , \quad
-#         &
-#         \varepsilon > 0
-#     \end{aligned}
-#     \right.
-# \end{equation}
-# 
-# Therefore, the main equation takes the form
-# \begin{equation}
-#     \varphi
-#     =
-#     2 H_{\lambda}(\text{RHS}, \varphi)
-# \end{equation}
-
-# In[9]:
 
 
-class HelmholtzOperator(object):
-    """
-    lamb : mu = sqrt(-2*lamb)
-    """
-    def __init__(self, mra, lamb, prec):
-        self.mra = mra
-        self.lamb = lamb
-        self.prec = prec
-        self.operator = None
-        self.setup()
 
-    def setup(self):
-        if self.lamb < - ZERO:
-            self.operator = vp3.HelmholtzOperator(mra=self.mra, exp=np.sqrt(-2.0*self.lamb), prec=self.prec)
-        elif self.lamb < ZERO:
-            self.operator = Poisson
-        else:
-            self.operator = vp3.HelmholtzOperator(mra=self.mra, exp=1.0, prec=self.prec)
-
-    def __call__(self, RHS, psi):
-        res = None
-        if self.lamb < ZERO:
-            res = self.operator(RHS)
-        else:
-            res = RHS + (0.5 + self.lamb) * psi
-            res = self.operator(res)
-        return res
-
+from operators import HelmholtzOperator
 
 # $$
 #     \begin{pmatrix}
@@ -342,119 +241,12 @@ class HelmholtzOperator(object):
 # 
 # 
 
-# In[10]:
 
 
-def build_coefficient_matrix(c, H, epsilon):
-    """
-    Constructs the matrix:
-    
-        (  0     c^T  )
-        (  c  ε - H )
-    
-    Parameters:
-    c : (M+1,) array_like
-    H : (M+1, M+1) array_like
-        Square matrix H.
-    epsilon : float
-    
-    Returns:
-    numpy.ndarray
-        Constructed (M+2, M+2) matrix.
-    """
-    c = np.asarray(c).reshape(-1, 1)  # Ensure c is a column vector
-    H = np.asarray(H)                 # Ensure H is an array
-    M = H.shape[0]                    # Determine M from H
-    
-    if c.shape[0] != M:
-        raise ValueError("Dimension mismatch: c must have the same length as the size of H")
-    
-    # Construct the (M+1, M+1) matrix
-    matrix = np.zeros((M+1, M+1))
-    matrix[0, 1:] = c.T  # First row
-    matrix[1:, 0] = c[:, 0]  # First column
-    matrix[1:, 1:] = epsilon * np.eye(M) - H  # Bottom-right block
-    
-    return matrix
 
+from functions import build_coefficient_matrix
+from functions import solve_symmetric_antisymmetric
 
-# The equations for the orbital energy updates $\delta \varepsilon_{kj}$
-# have the following matrix form
-# $$
-#     X + \mathcal E Y = F
-#     ,
-# $$
-# where $\mathcal E = ( \varepsilon_{kj} )$,
-# $X = ( \delta \varepsilon_{kj} )$ is symmetric
-# and $Y = \left( \int \delta \varphi_j \varphi_k \right)$ is antisymmetric.
-# 
-# 
-# ### Solving the Equation $X + E Y = F$
-# 
-# We want to solve the equation:
-# 
-# $$ X + E Y = F $$
-# 
-# where:
-# - $X$ is symmetric: $X^T = X$,
-# - $Y$ is antisymmetric: $Y^T = -Y$.
-# 
-# #### Step 1: Split into Symmetric and Antisymmetric Parts
-# 
-# Taking the transpose of both sides:
-# 
-# $$ X^T + Y^T E^T = F^T. $$
-# 
-# Using the properties of $X$ and $Y$, we rewrite:
-# 
-# $$ X + (-Y) E^T = F^T. $$
-# 
-# Now, we add and subtract the original equation:
-# 
-# $$ (X + X) + E Y - Y E^T = F + F^T, $$
-# 
-# $$ (X - X) + E Y + Y E^T = F - F^T. $$
-# 
-# These simplify to two separate equations:
-# 
-# $$ 2X = (F + F^T) - E Y + Y E^T, $$
-# 
-# $$ E Y + Y E^T = (F - F^T). $$
-# 
-# #### Step 2: Solve for $Y$
-# 
-# The equation for $Y$:
-# 
-# $$ E Y + Y E^T = (F - F^T) $$
-# 
-# is a **Sylvester equation**, which can be solved using `scipy.linalg.solve_sylvester`.
-# 
-# #### Step 3: Solve for $X$
-# 
-# Once $Y$ is found, we solve for $X$:
-# 
-# $$ X = \frac{1}{2} (F + F^T - E Y + Y E^T). $$
-# 
-# This ensures that $X$ remains symmetric and $Y$ remains antisymmetric.
-# 
-
-# In[11]:
-
-
-def solve_symmetric_antisymmetric(E, F):
-    # Ensure F is a square matrix
-    assert E.shape == F.shape, "E and F must be square matrices of the same size"
-    
-    # Compute antisymmetric matrix Y
-    Y = scipy.linalg.solve_sylvester(E, E.T, F - F.T)
-    
-    # Compute symmetric matrix X
-    X = 0.5 * (F + F.T - E @ Y + Y @ E.T)
-    
-    return X, Y
-
-
-# In[12]:
 
 
 def F_SCF(delta_Phi, w, w_data):
@@ -468,6 +260,10 @@ def F_SCF(delta_Phi, w, w_data):
     H_matrix  = w_data[3]
     Helmholtz = w_data[4]
     coefficient_matrix = w_data[5]
+
+    if molecule_state == 'excited':
+        lamb = w[4]
+        v = w_data[6]
     
     delta_mult = np.empty( (N_orbitals, N_orbitals), dtype = delta_Phi.dtype )
     for i in range(N_orbitals):
@@ -485,9 +281,12 @@ def F_SCF(delta_Phi, w, w_data):
             f_vector[k] += 2.0 * coeff[m] * vp3.dot( delta_mult[k, m] + delta_mult[m, k], conv[k, m] )
 
     first_entry = -0.5 * (np.sum(coeff**2) - 1)
+    if molecule_state == 'excited':
+        #print("modify f")
+        first_entry = np.hstack((first_entry, 0.0))
     RHS = np.hstack((first_entry, f_vector))
     delta_epsilon_coeff = scipy.linalg.solve(coefficient_matrix, RHS, assume_a="sym")
-    delta_coeff = delta_epsilon_coeff[1:]
+    delta_coeff = delta_epsilon_coeff[-N_orbitals:]
     
     energy_RHS = np.eye(N_orbitals)
     for k in range(N_orbitals):
@@ -530,10 +329,7 @@ def F_SCF(delta_Phi, w, w_data):
     return new_delta_Phi, [ delta_epsilon_coeff[0], delta_coeff, delta_epsilon_matrix ]
 
 
-# In[13]:
 
-
-#MAX_HISTORY_SCF = 3 #9
 
 def f_g_SCF(x, w, w_data):
     psi, delta_epsilon_coeff_epsilon_matrix = F_SCF(x, w, w_data)
@@ -590,56 +386,11 @@ def remove_old_history(x):
 #   - Update $w = w + \delta w$
 # 
 
+from operators import Laplace
+from operators import Poisson
 
-def calculate_energy(Phi):
-    mult = np.empty((N_orbitals, N_orbitals), dtype=Phi.dtype)
-    for i in range(N_orbitals):
-        for j in range(i, N_orbitals):  # Loop only over the upper triangle
-            value = Phi[i] * Phi[j]
-            mult[i, j] = value
-            mult[j, i] = value  # Use symmetry to fill the lower triangle
-    
-    conv = np.empty((N_orbitals, N_orbitals), dtype=Phi.dtype)
-    for i in range(N_orbitals):
-        for j in range(i, N_orbitals):  # Loop only over the upper triangle
-            value = 4 * np.pi * Poisson(mult[i, j]).crop(precision)
-            conv[i, j] = value
-            conv[j, i] = value  # Use symmetry to fill the lower triangle
-
-    h_vector = np.array([ -0.5 * Laplace(phi) + V * phi for phi in Phi ])
-    
-    h_matrix = np.eye(N_orbitals)
-    for i in range(N_orbitals):
-        for j in range(i, N_orbitals):  # Loop only over the upper triangle
-            value = vp3.dot(h_vector[i], Phi[j])
-            h_matrix[i, j] = value
-            h_matrix[j, i] = value  # Use symmetry to fill the lower triangle
-
-    H_matrix = np.eye(N_orbitals)
-    for k in range(N_orbitals):
-        for m in range(k, N_orbitals):
-            value = vp3.dot(mult[k, m], conv[k, m])
-            H_matrix[k, m] = value
-            H_matrix[m, k] = value  # Use symmetry to fill the lower triangle
-    for k in range(N_orbitals):
-        H_matrix[k, k] += 2.0 * h_matrix[k, k]
-
-    H_eigenvalue, H_eigenvector = np.linalg.eigh(H_matrix)
-    H_eigenvalue = H_eigenvalue[0]
-    H_eigenvector = H_eigenvector.T[0]
-    H_eigenvector *= np.sign(H_eigenvector[0])
-    
-    del mult
-    # Optional: force immediate cleanup
-    #import gc
-    #gc.collect()
-    
-    supplementary_data = [ conv, h_vector, h_matrix, H_matrix ]
-    
-    return H_eigenvalue, H_eigenvector, supplementary_data
-
-# In[14]:
-
+from coefficient_optimisation import CoefficientOptimiser
+CI_optimiser = CoefficientOptimiser(V, precision)
 
 # Initial guess:
 Phi = Guess_orbital
@@ -648,9 +399,8 @@ epsilon = 0.0
 coeff = None
 epsilon_matrix = - np.eye(N_orbitals)
 
-
-
-# In[15]:
+if molecule_state == 'excited':
+    lamb = 0.0
 
 
 
@@ -661,7 +411,7 @@ tolerance = np.sqrt(N_orbitals) * precision
 for outer_index in range(outer_max):
     print(f"outer_index = {outer_index}")
     
-    H_eigenvalue, H_eigenvector, supplementary_data = calculate_energy(Phi)
+    H_eigenvalue, H_eigenvector, supplementary_data = CI_optimiser.calculate_energy(Phi)
     if outer_index > 0 and H_eigenvalue > H_EIGENVALUE[-1] + ZERO:
         print("H_eigenvalue > H_EIGENVALUE[-1]")
         Phi = previous_Phi
@@ -688,7 +438,12 @@ for outer_index in range(outer_max):
     epsilon = H_eigenvalue
     coeff = H_eigenvector
         
-    coefficient_matrix = build_coefficient_matrix(coeff, H_matrix, epsilon)    
+    v = None
+    if molecule_state == 'excited':
+        v = CI_optimiser.ground_vector(Phi)
+        
+
+    coefficient_matrix = build_coefficient_matrix(coeff, H_matrix, epsilon, v)
         
 
     helmholtz_lambda = epsilon_matrix.diagonal() / coeff**2
@@ -697,9 +452,11 @@ for outer_index in range(outer_max):
     w = [ Phi, epsilon, coeff, epsilon_matrix ]
     w_data = [ conv, h_vector, h_matrix, H_matrix, Helmholtz, coefficient_matrix ]
     
+    if molecule_state == 'excited':
+        w.append(lamb)
+        w_data.append(v)
+    
     delta_Phi = np.array([ vp3.ZeroTree(mra) for i in range(N_orbitals) ])
-    # It would be itnteresting to try instead something like:
-    #delta_Phi = np.array([ 0.1* Phi[1], 0.1* Phi[0] ])    
     
     
 
@@ -759,11 +516,10 @@ for outer_index in range(outer_max):
         
     previous_Phi = Phi
     Phi = Phi + delta_Phi
-    Phi = lowdin_orthonormalization(Phi)
     epsilon += delta_epsilon_coeff_epsilon_matrix[0]
     coeff   += delta_epsilon_coeff_epsilon_matrix[1]
-    coeff /= np.linalg.norm(coeff)
     epsilon_matrix += delta_epsilon_coeff_epsilon_matrix[2]
+    Phi, coeff = lowdin_orthonormalization(Phi, coeff)
     for ind in range(N_orbitals):
         if epsilon_matrix[ind, ind] >= 0:
             print("POSITIVE ORBITAL ENERGY:", epsilon_matrix[ind, ind])
@@ -781,9 +537,8 @@ for outer_index in range(outer_max):
 
 
 
-# In[20]:
 
-H_eigenvalue, coeff, supplementary_data = calculate_energy(Phi)
+H_eigenvalue, coeff, supplementary_data = CI_optimiser.calculate_energy(Phi)
 
 H_EIGENVALUE.append(H_eigenvalue)
 EPSILON.append(epsilon)
@@ -810,7 +565,6 @@ print(f"Elapsed time: {end_calculations - start_calculations}")
 print(" ")
 
 
-# In[33]:
 
 
 improvement = {
@@ -819,7 +573,6 @@ improvement = {
     'epsilon_matrix' :  epsilon_matrix,
     'H_eigenvalue' :  H_eigenvalue,
     'epsilon' :  epsilon,
-    #'HF_total_energy' :  HF_total_energy,
     'equilibrium_internuclear_distance' : equilibrium_internuclear_distance,
     
 
