@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
 # # General case (constrained coefficients)
 # 
 # 
@@ -50,7 +47,6 @@
 # with symmetric matrix coefficients $\varepsilon_{ij}$.
 # 
 
-# In[1]:
 
 import sys
 sys.path.append("src/")
@@ -107,9 +103,6 @@ print(" ")
 print("equilibrium_internuclear_distance:")
 print(equilibrium_internuclear_distance)
 print(" ")
-#print("HF_total_energy:")
-#print(HF_total_energy)
-print(" ")
 
 
 
@@ -135,7 +128,6 @@ print(V)
 
 
 
-# In[5]:
 
 
 
@@ -290,10 +282,8 @@ def F_SCF(delta_Phi, w, w_data):
 
     first_entry = -0.5 * (np.sum(coeff**2) - 1)
     if molecule_state == 'excited':
-        print("modify f")
+        #print("modify f")
         first_entry = np.hstack((first_entry, 0.0))
-        print(v)
-        print(coefficient_matrix)
     RHS = np.hstack((first_entry, f_vector))
     delta_epsilon_coeff = scipy.linalg.solve(coefficient_matrix, RHS, assume_a="sym")
     delta_coeff = delta_epsilon_coeff[-N_orbitals:]
@@ -339,10 +329,7 @@ def F_SCF(delta_Phi, w, w_data):
     return new_delta_Phi, [ delta_epsilon_coeff[0], delta_coeff, delta_epsilon_matrix ]
 
 
-# In[13]:
 
-
-#MAX_HISTORY_SCF = 3 #9
 
 def f_g_SCF(x, w, w_data):
     psi, delta_epsilon_coeff_epsilon_matrix = F_SCF(x, w, w_data)
@@ -454,7 +441,7 @@ for outer_index in range(outer_max):
     v = None
     if molecule_state == 'excited':
         v = CI_optimiser.ground_vector(Phi)
-        print("coeff - v = ", coeff - v)
+        
 
     coefficient_matrix = build_coefficient_matrix(coeff, H_matrix, epsilon, v)
         
@@ -550,7 +537,6 @@ for outer_index in range(outer_max):
 
 
 
-# In[20]:
 
 H_eigenvalue, coeff, supplementary_data = CI_optimiser.calculate_energy(Phi)
 
@@ -579,7 +565,6 @@ print(f"Elapsed time: {end_calculations - start_calculations}")
 print(" ")
 
 
-# In[33]:
 
 
 improvement = {
@@ -588,7 +573,6 @@ improvement = {
     'epsilon_matrix' :  epsilon_matrix,
     'H_eigenvalue' :  H_eigenvalue,
     'epsilon' :  epsilon,
-    #'HF_total_energy' :  HF_total_energy,
     'equilibrium_internuclear_distance' : equilibrium_internuclear_distance,
     
 

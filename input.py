@@ -1,5 +1,5 @@
-#N_orbitals = int(sys.argv[1])
-#molecule_name = str(sys.argv[2])
+#N_orbitals = int(sys.argv[1])      in calculate_ground.py
+#molecule_name = str(sys.argv[2])   in calculate_ground.py
 
 precision = 1.0e-4                  #default: 1.0e-4
 ZERO = 1.0e-10                      #default: 1.0e-10
@@ -18,7 +18,6 @@ molecule_state = 'excited'
 
 # Fill in the location to the ground state
 if molecule_state == 'excited':
-    #Ground_directory = 'experiments/ground/helium'
     Ground_directory = 'experiments/ground'
 
     # Ground CI coefficients should be in a pkl-file accesible by the key 'coeff' (ommit extension '.pkl'):

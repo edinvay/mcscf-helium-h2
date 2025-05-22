@@ -1,8 +1,6 @@
 import scipy
 import numpy as np
 
-#from core import calculate_overlap
-#from input import molecule_state
 
 
 
@@ -116,7 +114,6 @@ def build_coefficient_matrix(c, H, epsilon, v=None):
 # This ensures that $X$ remains symmetric and $Y$ remains antisymmetric.
 # 
 
-# In[11]:
 
 
 def solve_symmetric_antisymmetric(E, F):
