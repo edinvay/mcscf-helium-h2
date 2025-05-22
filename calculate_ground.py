@@ -282,8 +282,13 @@ def F_SCF(delta_Phi, w, w_data):
 
     first_entry = -0.5 * (np.sum(coeff**2) - 1)
     if molecule_state == 'excited':
-        #print("modify f")
-        first_entry = np.hstack((first_entry, 0.0))
+        overlap_Phi = calculate_overlap(Phi, CI_optimiser.Ground_orbital)
+        overlap_delta_Phi = calculate_overlap(delta_Phi, CI_optimiser.Ground_orbital)
+        temp = overlap_Phi * overlap_delta_Phi
+        temp = temp @ CI_optimiser.Ground_coeff
+        temp = v + 2.0 * temp
+        first_entry = np.hstack(( first_entry, - np.dot(coeff, temp) ))
+        f_vector -= lamb * temp
     RHS = np.hstack((first_entry, f_vector))
     delta_epsilon_coeff = scipy.linalg.solve(coefficient_matrix, RHS, assume_a="sym")
     delta_coeff = delta_epsilon_coeff[-N_orbitals:]
@@ -298,7 +303,12 @@ def F_SCF(delta_Phi, w, w_data):
                 temp += ( coeff[k] * delta_coeff[m] + delta_coeff[k] * coeff[m] + coeff[k] * coeff[m] ) * Phi[m]
                 temp *= Phi[j]
                 energy_RHS[k, j] += vp3.dot( temp, conv[k, m] )
-
+    if molecule_state == 'excited':
+        delta_lamb = delta_epsilon_coeff[1]
+        temp = overlap_Phi * CI_optimiser.Ground_coeff
+        temp = temp.T
+        energy_RHS -= np.diag(lamb * coeff) @ overlap_delta_Phi @ temp
+        energy_RHS -= np.diag(lamb * delta_coeff + delta_lamb * coeff + lamb * coeff) @ overlap_Phi @ temp
                 
     delta_epsilon_matrix = solve_symmetric_antisymmetric(epsilon_matrix, energy_RHS)[0]
 
