@@ -18,7 +18,8 @@ molecule_state = 'excited'
 
 # Fill in the location to the ground state
 if molecule_state == 'excited':
-    Ground_directory = 'experiments/ground/helium'
+    #Ground_directory = 'experiments/ground/helium'
+    Ground_directory = 'experiments/ground/h2'
 
     # Ground CI coefficients should be in a pkl-file accesible by the key 'coeff' (ommit extension '.pkl'):
     Ground_coefficient_file_name = 'general_3_orbital'

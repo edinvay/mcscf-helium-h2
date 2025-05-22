@@ -15,8 +15,8 @@ x1 = (-0.5 * equilibrium_internuclear_distance, 0., 0.)
 x2 = ( 0.5 * equilibrium_internuclear_distance, 0., 0.)
 
 
-n_max = 1
-Z = 2
+n_max = 2
+Z = 1
 
 n_l_m_Z_list = create_n_l_m_Z(n_max, Z)
 n_l_m_Z_list[0][-1] = 1
