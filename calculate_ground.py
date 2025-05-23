@@ -331,12 +331,19 @@ def F_SCF(delta_Phi, w, w_data):
             mathfrak_F[k] += coeff[k] * coeff[m] * temp * Phi[m]
         mathfrak_F[k].crop(precision)
     
+    if molecule_state == 'excited':
+        M_1 = np.diag(lamb * coeff) @ (overlap_delta_Phi * CI_optimiser.Ground_coeff)
+        M_2 = np.diag(lamb * delta_coeff + delta_lamb * coeff + lamb * coeff) @ (overlap_Phi * CI_optimiser.Ground_coeff)
+        mathfrak_F -= (M_1 + M_2) @ CI_optimiser.Ground_orbital
+        for k in range(N_orbitals):
+            mathfrak_F[k].crop(precision)
+    
     new_delta_Phi = ( - 1.0 - 2.0 * delta_coeff / coeff ) * Phi
     for k in range(N_orbitals):
         new_delta_Phi[k] -= 2.0 / coeff[k]**2 * Helmholtz[k](mathfrak_F[k], delta_Phi[k])
         new_delta_Phi[k].crop(precision, True)
     
-    return new_delta_Phi, [ delta_epsilon_coeff[0], delta_coeff, delta_epsilon_matrix ]
+    return new_delta_Phi, [ delta_epsilon_coeff[0], delta_coeff, delta_epsilon_matrix, delta_lamb ]
 
 
 
@@ -529,6 +536,8 @@ for outer_index in range(outer_max):
     epsilon += delta_epsilon_coeff_epsilon_matrix[0]
     coeff   += delta_epsilon_coeff_epsilon_matrix[1]
     epsilon_matrix += delta_epsilon_coeff_epsilon_matrix[2]
+    if molecule_state == 'excited':
+        lamb += delta_epsilon_coeff_epsilon_matrix[3]
     Phi, coeff = lowdin_orthonormalization(Phi, coeff)
     for ind in range(N_orbitals):
         if epsilon_matrix[ind, ind] >= 0:
