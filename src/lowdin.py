@@ -114,7 +114,7 @@ def optimize_problem(N, M, Phi, G, a, c):
         objective, x0, args=(N, M, Phi, G, a),
         constraints=constraints,
         method='SLSQP',
-        options={'ftol': 1e-12, 'maxiter': 10000, 'disp': True}
+        options={'ftol': 1e-12, 'maxiter': 10000, 'disp': False}
     )
 
 
