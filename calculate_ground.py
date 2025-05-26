@@ -343,7 +343,11 @@ def F_SCF(delta_Phi, w, w_data):
         new_delta_Phi[k] -= 2.0 / coeff[k]**2 * Helmholtz[k](mathfrak_F[k], delta_Phi[k])
         new_delta_Phi[k].crop(precision, True)
     
-    return new_delta_Phi, [ delta_epsilon_coeff[0], delta_coeff, delta_epsilon_matrix, delta_lamb ]
+    delta_epsilon_coeff_epsilon_matrix = [ delta_epsilon_coeff[0], delta_coeff, delta_epsilon_matrix ]
+    if molecule_state == 'excited':
+        delta_epsilon_coeff_epsilon_matrix.append(delta_lamb)
+
+    return new_delta_Phi, delta_epsilon_coeff_epsilon_matrix
 
 
 
