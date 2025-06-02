@@ -14,6 +14,11 @@ print(" ")
 
 #from input import precision
 precision = 1.0e-3
+# DIIS:
+Nmax = 9
+tolerance = precision
+
+
 from input import ZERO
 
 
@@ -146,7 +151,7 @@ def F_SCF(Phi):
         for m in itertools.chain(range(k), range(k + 1, N_orbitals)):    
             mathfrak_F[k] -= h_matrix[k, m] * Phi[m]
 
-    helmholtz_lambda = h_matrix.diagonal()
+    helmholtz_lambda = np.copy(h_matrix.diagonal())
     for ind in range(N_orbitals):
         if helmholtz_lambda[ind] >= 0:
             print("POSITIVE ORBITAL ENERGY:", helmholtz_lambda[ind])
@@ -159,15 +164,72 @@ def F_SCF(Phi):
         new_Phi[-1].crop(precision, True)
     
     new_Phi = np.array(new_Phi)
+
+    coeff = np.array( [1.0] * N_orbitals )
+    new_Phi, coeff = lowdin_orthonormalization(new_Phi, coeff)
+
     
     return new_Phi, h_matrix
 
 
-Phi, epsilon_matrix = F_SCF(Guess_orbital)
+def f_g_SCF(x):
+    psi, epsilon_matrix = F_SCF(x)
+    return psi, x - psi, epsilon_matrix
 
-error = Phi - Guess_orbital
+
 
 single_electron_diis = DIIS(mra, Guess_orbital, MAX_HISTORY_SCF)
 
-print("Error:")
-print( single_electron_diis.norm_SCF(error) )
+
+
+for n in range(Nmax):
+    print(f"For n = {n} we have:")
+
+    f, g, epsilon_matrix = f_g_SCF(single_electron_diis.x_iterations[-1])
+    single_electron_diis.append_f_g(f, g)
+
+    norm_f = single_electron_diis.calculate_norm_f()
+
+    norm_g = single_electron_diis.calculate_norm_g()
+    print("norm(g) = ", norm_g)
+    if norm_g < tolerance:
+        print("Precision is achieved at n =", n)
+        break
+
+    single_electron_diis.run()
+
+    print("norm(f) = ", norm_f)
+
+
+Phi = single_electron_diis.f_iterations[-1]
+
+print("Orbital energies:")
+print(epsilon_matrix.diagonal())
+
+file_name = f"single_electron_{N_orbitals}_orbital"
+name = name_solution_file(
+    directory_name = experiments_directory + molecule_name,
+    file_name = file_name
+)
+
+for index, phi in enumerate( Phi ):
+    print(index)
+    print(phi)
+    phi.saveTree( name + '_phi_' + str(index) )
+
+#with open(name + '.pkl', 'wb') as file:
+#    pickle.dump(improvement, file)
+
+
+
+print(" ")
+end_calculations = datetime.now()
+print("Day YYYY-MM-DD and Time HH:MM:SS:")
+print(end_calculations.strftime("%Y-%m-%d %H:%M:%S"))
+print(" ")
+print(f"Elapsed time: {end_calculations - start_calculations}")
+print(" ")
+
+
+print("FINISHED")
+
