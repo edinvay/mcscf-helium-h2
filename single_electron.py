@@ -122,3 +122,52 @@ for ind, multi_index in enumerate(get_multi_indices(N_orbitals)):
 
 Guess_orbital = np.array(Guess_orbital)
 print(np.linalg.norm(calculate_overlap(Guess_orbital, Guess_orbital) - np.eye(N_orbitals)))
+
+
+from operators import Laplace
+from operators import HelmholtzOperator
+from diis import DIIS
+
+
+def F_SCF(Phi):
+    N_orbitals = len(Phi)
+
+    h_vector = np.array([ -0.5 * Laplace(phi) + V * phi for phi in Phi ])
+    
+    h_matrix = np.eye(N_orbitals)
+    for i in range(N_orbitals):
+        for j in range(i, N_orbitals):  # Loop only over the upper triangle
+            value = vp3.dot(h_vector[i], Phi[j])
+            h_matrix[i, j] = value
+            h_matrix[j, i] = value  # Use symmetry to fill the lower triangle
+    
+    mathfrak_F = V * Phi
+    for k in range(N_orbitals):
+        for m in itertools.chain(range(k), range(k + 1, N_orbitals)):    
+            mathfrak_F[k] -= h_matrix[k, m] * Phi[m]
+
+    helmholtz_lambda = h_matrix.diagonal()
+    for ind in range(N_orbitals):
+        if helmholtz_lambda[ind] >= 0:
+            print("POSITIVE ORBITAL ENERGY:", helmholtz_lambda[ind])
+            helmholtz_lambda[ind] *= -1    
+    Helmholtz = [ HelmholtzOperator(mra, lambda_1, precision) for lambda_1 in helmholtz_lambda ]
+    
+    new_Phi = []
+    for k, frak in enumerate(mathfrak_F):
+        new_Phi.append( - 2.0 * Helmholtz[k](frak, Phi[k]) )
+        new_Phi[-1].crop(precision, True)
+    
+    new_Phi = np.array(new_Phi)
+    
+    return new_Phi, h_matrix
+
+
+Phi, epsilon_matrix = F_SCF(Guess_orbital)
+
+error = Phi - Guess_orbital
+
+single_electron_diis = DIIS(mra, Guess_orbital, MAX_HISTORY_SCF)
+
+print("Error:")
+print( single_electron_diis.norm_SCF(error) )
