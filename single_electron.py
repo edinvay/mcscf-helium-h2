@@ -51,3 +51,33 @@ V.setName( 'potential' )
 print(V)
 
 
+
+def multi_indices(d):
+    """
+    Generate 3D multi-indices in graded lexicographic order:
+    - Sorted by total degree (n_x + n_y + n_z)
+    - Then lexicographically within each degree
+    """
+    indices = []
+    for total_deg in range(d + 1):
+        for n in itertools.product(range(total_deg + 1), repeat=3):
+            if sum(n) == total_deg:
+                indices.append(n)
+    return indices
+
+from math import comb
+
+def degree_for_truncation(N):
+    """
+    Find the smallest d such that binomial(d + 3, 3) >= N
+    """
+    d = 0
+    while comb(d + 3, 3) < N:
+        d += 1
+    return d
+
+def get_multi_indices(N_orbitals):
+    return multi_indices(degree_for_truncation(N_orbitals))[ : N_orbitals]
+
+
+print(get_multi_indices(N_orbitals))
