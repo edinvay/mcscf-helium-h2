@@ -356,45 +356,7 @@ def f_g_SCF(x, w, w_data):
     psi, delta_epsilon_coeff_epsilon_matrix = F_SCF(x, w, w_data)
     return psi, x - psi, delta_epsilon_coeff_epsilon_matrix
 
-def norm_SCF(x):
-    return np.sqrt( sum([ psi.squaredNorm() for psi in x ]))
-
-def dot_SCF(x, y):
-    return sum([ vp3.dot(psi, phi) for psi, phi in zip(x, y) ])
-
-def form_B_matrix(X):
-    n = len(X)
-    B = np.empty((n, n))
-    for j in range(n):
-        for k in range(n):
-            B[j][k] = dot_SCF(X[j], X[k])
-    return B
-
-def form_DIIS_matrix(X):
-    n = len(X)
-    B = form_B_matrix(X)
-    column_vector = np.ones((n, 1))
-    res = np.hstack((B, column_vector))
-    row_vector = np.ones((1, n+1))
-    res = np.vstack((res, row_vector))
-    res[-1][-1] = 0
-    return res
-
-def ell(n):
-    max_history = MAX_HISTORY_SCF - 1
-    return max(0, n - max_history)
-
-def linear_combination_SCF(c, X):
-    res0 = np.array([vp3.FunctionTree(mra).setZero()] * len(X[0]))
-    res1 = 0
-    for ind, x in enumerate(X):
-        res0 += c[ind] * x        
-    return res0
-
-def remove_old_history(x):
-    while len(x) > MAX_HISTORY_SCF:
-        del x[0]
-
+from diis import DIIS
 
 # ## Newton Algorithm
 # 
@@ -481,10 +443,8 @@ for outer_index in range(outer_max):
     
     
 
-    x_iterations = [ delta_Phi ]
-    f_iterations = []
-    g_iterations = []
-
+    update_equation_diis = DIIS(mra, delta_Phi, MAX_HISTORY_SCF)
+    
     DIIS_ITERATIONS.append(0)
     F_NORM.append(-1.0)
 
@@ -492,15 +452,14 @@ for outer_index in range(outer_max):
         print(f"inner_index = {inner_index}")
         DIIS_ITERATIONS[-1] = inner_index
 
-        f, g, delta_epsilon_coeff_epsilon_matrix = f_g_SCF(x_iterations[-1], w, w_data)
-        f_iterations.append(f)
-        g_iterations.append(g)
+        f, g, delta_epsilon_coeff_epsilon_matrix = f_g_SCF(update_equation_diis.x_iterations[-1], w, w_data)
+        update_equation_diis.append_f_g(f, g)
 
-        norm_f = norm_SCF(f_iterations[-1])
+        norm_f = update_equation_diis.calculate_norm_f()
         F_NORM[-1] = norm_f
         if norm_f > trust_radius:
             print("Outside trust region with norm of delta_Phi = ", norm_f)
-            f_iterations[-1] *= trust_radius / norm_f
+            update_equation_diis.f_iterations[-1] *= trust_radius / norm_f
             for ind in range(N_orbitals):
                 epsilon_matrix[ind, ind] *= 10.0
                 if epsilon_matrix[ind, ind] >= 0:
@@ -508,32 +467,17 @@ for outer_index in range(outer_max):
                     epsilon_matrix[ind, ind] *= -1
             break
         
-        norm_g = norm_SCF(g_iterations[-1])
+        norm_g = update_equation_diis.calculate_norm_g()
         if norm_g < tolerance:
             print("Precision is achieved at inner_index =", inner_index)
             break
 
-        remove_old_history(x_iterations)
-        remove_old_history(f_iterations)
-        remove_old_history(g_iterations)
-
-        ell_n0 = ell(len(x_iterations) - 1)
-        for ell_n in range(ell_n0, len(x_iterations)):
-            DIIS_matrix = form_DIIS_matrix(g_iterations[ell_n : ])
-            DIIS_vector = np.zeros(np.shape(DIIS_matrix)[1])
-            DIIS_vector[-1] = 1.0
-            try:
-                c = np.linalg.solve(DIIS_matrix, DIIS_vector)[:-1]
-                x = linear_combination_SCF(c, f_iterations[ell_n : ])
-                x_iterations.append(x)
-                break
-            except np.linalg.LinAlgError:
-                print("DIIS matrix is singular and ell_n is optimised.")
+        update_equation_diis.run()
 
         print("norm(f) = ", norm_f)
         
         
-    delta_Phi = f_iterations[-1]
+    delta_Phi = update_equation_diis.f_iterations[-1]
         
     previous_Phi = Phi
     Phi = Phi + delta_Phi
@@ -555,7 +499,7 @@ for outer_index in range(outer_max):
 
     print("coeff = ", coeff)
 
-    if norm_SCF(delta_Phi) < tolerance:
+    if update_equation_diis.norm_SCF(delta_Phi) < tolerance:
         break
 
 
