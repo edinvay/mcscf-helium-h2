@@ -13,9 +13,11 @@ class DIIS(object):
 
 
     def norm_SCF(self, x):
+        # change:
         return np.sqrt( sum([ psi.squaredNorm() for psi in x ]))
 
     def dot_SCF(self, x, y):
+        # change:
         return sum([ vp3.dot(psi, phi) for psi, phi in zip(x, y) ])
 
     def form_B_matrix(self, X):
@@ -41,7 +43,8 @@ class DIIS(object):
         return max(0, n - max_history)
 
     def linear_combination_SCF(self, c, X):
-        res0 = np.array([vp3.FunctionTree(self.mra).setZero()] * len(X[0]))
+        # change:
+        res0 = np.array([vp3.FunctionTree(self.mra).setZero() for _ in range(len(X[0]))])
         for ind, x in enumerate(X):
             res0 += c[ind] * x        
         return res0
@@ -79,4 +82,9 @@ class DIIS(object):
                 break
             except np.linalg.LinAlgError:
                 print("DIIS matrix is singular and ell_n is optimised.")
-    
+
+
+class ExtendedDIIS(DIIS):
+    def __init__(self, mra, x0, MAX_HISTORY_SCF, N_orbitals):
+        super(ExtendedDIIS, self).__init__(mra, x0, MAX_HISTORY_SCF)
+        self.N_orbitals = N_orbitals
