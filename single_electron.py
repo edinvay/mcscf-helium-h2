@@ -10,10 +10,14 @@ print(start_calculations.strftime("%Y-%m-%d %H:%M:%S"))
 print(" ")
 print(" ")
 
+from input import molecule_state
+if molecule_state == 'excited':
+    raise ValueError(f"Invalid molecule_state: '{molecule_state}'. Must be 'ground', since 'excited' is not implemented yet.")
 
 
 #from input import precision
-precision = 1.0e-3
+precision = 1.0e-4
+projection_precision = 1.0e-3
 # DIIS:
 Nmax = 9
 tolerance = precision
@@ -56,7 +60,8 @@ V.setName( 'potential' )
 
 print(V)
 
-
+##########################################################################################
+##########################################################################################
 
 def multi_indices(d):
     """
@@ -110,10 +115,37 @@ def hermite_3d_eval(n, x, y, z):
 def orthogonal_hermite_3d(multi_index, x):
     return np.exp( (- x[0]*x[0] - x[1]*x[1] - x[2]*x[2]) * 0.5 ) * hermite_3d_eval(multi_index, x[0], x[1], x[2])
 
+##########################################################################################
+##########################################################################################
+
+def generate_gaussian_centers(N_orbitals, radius=5.0, min_distance=1.0):
+    """
+    Generate N_orbitals Gaussian centers in 3D.
+    The first center is at the origin.
+    The rest are randomly placed with a minimum pairwise distance.
+    """
+    centers = [np.zeros(3)]  # First Gaussian at origin
+
+    while len(centers) < N_orbitals:
+        candidate = np.random.uniform(-radius, radius, 3)
+
+        if all(np.linalg.norm(candidate - c) >= min_distance for c in centers):
+            centers.append(candidate)
+
+    return np.array(centers)
+
+centers = generate_gaussian_centers(N_orbitals, radius=4.0, min_distance=1.0)
+for i, c in enumerate(centers):
+    print(f"Center {i}: {c}")
+
+Gauss = []
+for i, c in enumerate(centers):
+    Gauss.append( vp3.GaussFunc(beta = 1.0, position = c) )
+
 print(mra)
-P_mra = vp3.ScalingProjector(mra, precision)
+P_mra = vp3.ScalingProjector(mra, projection_precision)
 
-
+"""
 Guess_orbital = []
 
 for ind, multi_index in enumerate(get_multi_indices(N_orbitals)):
@@ -129,6 +161,24 @@ for ind, multi_index in enumerate(get_multi_indices(N_orbitals)):
 
 Guess_orbital = np.array(Guess_orbital)
 print(np.linalg.norm(calculate_overlap(Guess_orbital, Guess_orbital) - np.eye(N_orbitals)))
+"""
+
+Guess_orbital = []
+
+for ind, gauss in enumerate(Gauss):
+    print(ind)
+#    def f(x):
+#        return orthogonal_hermite_3d(multi_index, x)
+    print("projecting...")
+    guess = P_mra(gauss)
+    guess.normalize()
+    print(guess)
+    Guess_orbital.append(guess)
+
+Guess_orbital = np.array(Guess_orbital)
+print(np.linalg.norm(calculate_overlap(Guess_orbital, Guess_orbital) - np.eye(N_orbitals)))
+coeff = np.array( [1.0] * N_orbitals )
+Guess_orbital, coeff = lowdin_orthonormalization(Guess_orbital, coeff)
 
 
 from operators import Laplace
