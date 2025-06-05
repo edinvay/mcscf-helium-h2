@@ -107,6 +107,8 @@ def hermite_3d_eval(n, x, y, z):
     return scipy.special.eval_hermite(nx, x) * scipy.special.eval_hermite(ny, y) * scipy.special.eval_hermite(nz, z)
 
 
+def orthogonal_hermite_3d(multi_index, x):
+    return np.exp( (- x[0]*x[0] - x[1]*x[1] - x[2]*x[2]) * 0.5 ) * hermite_3d_eval(multi_index, x[0], x[1], x[2])
 
 print(mra)
 P_mra = vp3.ScalingProjector(mra, precision)
@@ -118,7 +120,7 @@ for ind, multi_index in enumerate(get_multi_indices(N_orbitals)):
     print(ind)
     print(multi_index)
     def f(x):
-        return np.exp( (- x[0]*x[0] - x[1]*x[1] - x[2]*x[2]) * 0.5 ) * hermite_3d_eval(multi_index, x[0], x[1], x[2])
+        return orthogonal_hermite_3d(multi_index, x)
     print("projecting...")
     guess = P_mra(f)
     guess.normalize()
