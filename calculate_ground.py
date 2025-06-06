@@ -357,6 +357,7 @@ def f_g_SCF(x, w, w_data):
     return psi, x - psi, delta_epsilon_coeff_epsilon_matrix
 
 from diis import DIIS
+from diis import ExtendedDIIS
 
 # ## Newton Algorithm
 # 
@@ -388,13 +389,14 @@ if molecule_state == 'excited':
 
 
 tolerance = np.sqrt(N_orbitals) * precision
-
+main_diis = ExtendedDIIS(mra, None, MAX_HISTORY_SCF + 5, N_orbitals)
 
 
 for outer_index in range(outer_max):
     print(f"outer_index = {outer_index}")
     
     H_eigenvalue, H_eigenvector, supplementary_data = CI_optimiser.calculate_energy(Phi)
+    main_diis.x_iterations[-1] = np.hstack((Phi, H_eigenvector))
     if outer_index > 0 and H_eigenvalue > H_EIGENVALUE[-1] + ZERO:
         print("H_eigenvalue > H_EIGENVALUE[-1]")
         Phi = previous_Phi
@@ -406,6 +408,10 @@ for outer_index in range(outer_max):
             if epsilon_matrix[ind, ind] >= 0:
                 print("POSITIVE ORBITAL ENERGY:", epsilon_matrix[ind, ind])
                 epsilon_matrix[ind, ind] *= -1
+        del main_diis.x_iterations[-1]
+        del main_diis.f_iterations[-1]
+        del main_diis.g_iterations[-1]
+    
     # Too expensive to recalculate:
     conv = supplementary_data[0]
     h_vector = supplementary_data[1]
@@ -482,10 +488,18 @@ for outer_index in range(outer_max):
     previous_Phi = Phi
     Phi = Phi + delta_Phi
     epsilon += delta_epsilon_coeff_epsilon_matrix[0]
+#    previous_coeff = coeff
+#    coeff = coeff + delta_epsilon_coeff_epsilon_matrix[1]
     coeff   += delta_epsilon_coeff_epsilon_matrix[1]
     epsilon_matrix += delta_epsilon_coeff_epsilon_matrix[2]
     if molecule_state == 'excited':
         lamb += delta_epsilon_coeff_epsilon_matrix[3]
+
+    main_diis.append_f_g(np.hstack(( Phi, coeff )), np.hstack(( delta_Phi, delta_epsilon_coeff_epsilon_matrix[1] )))
+    main_diis.run()
+    Phi = main_diis.x_iterations[-1][ : N_orbitals]
+    coeff = np.array( main_diis.x_iterations[-1][N_orbitals : ], dtype=np.float64 )
+
     Phi, coeff = lowdin_orthonormalization(Phi, coeff)
     for ind in range(N_orbitals):
         if epsilon_matrix[ind, ind] >= 0:
