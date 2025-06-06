@@ -389,14 +389,16 @@ if molecule_state == 'excited':
 
 
 tolerance = np.sqrt(N_orbitals) * precision
-main_diis = ExtendedDIIS(mra, None, MAX_HISTORY_SCF + 5, N_orbitals)
+#main_diis = ExtendedDIIS(mra, None, MAX_HISTORY_SCF + 5, N_orbitals)
+main_diis = DIIS(mra, None, MAX_HISTORY_SCF + 5)
 
 
 for outer_index in range(outer_max):
     print(f"outer_index = {outer_index}")
     
     H_eigenvalue, H_eigenvector, supplementary_data = CI_optimiser.calculate_energy(Phi)
-    main_diis.x_iterations[-1] = np.hstack((Phi, H_eigenvector))
+    #main_diis.x_iterations[-1] = np.hstack((Phi, H_eigenvector))
+    main_diis.x_iterations[-1] = Phi
     if outer_index > 0 and H_eigenvalue > H_EIGENVALUE[-1] + ZERO:
         print("H_eigenvalue > H_EIGENVALUE[-1]")
         Phi = previous_Phi
@@ -495,11 +497,13 @@ for outer_index in range(outer_max):
     if molecule_state == 'excited':
         lamb += delta_epsilon_coeff_epsilon_matrix[3]
 
-    main_diis.append_f_g(np.hstack(( Phi, coeff )), np.hstack(( delta_Phi, delta_epsilon_coeff_epsilon_matrix[1] )))
+    #main_diis.append_f_g(np.hstack(( Phi, coeff )), np.hstack(( delta_Phi, delta_epsilon_coeff_epsilon_matrix[1] )))
+    main_diis.append_f_g(Phi, delta_Phi)
     main_diis.run()
-    Phi = main_diis.x_iterations[-1][ : N_orbitals]
-    coeff = np.array( main_diis.x_iterations[-1][N_orbitals : ], dtype=np.float64 )
-
+    #Phi = main_diis.x_iterations[-1][ : N_orbitals]
+    #coeff = np.array( main_diis.x_iterations[-1][N_orbitals : ], dtype=np.float64 )
+    Phi = main_diis.x_iterations[-1]
+    
     Phi, coeff = lowdin_orthonormalization(Phi, coeff)
     for ind in range(N_orbitals):
         if epsilon_matrix[ind, ind] >= 0:
