@@ -427,7 +427,15 @@ for outer_index in range(outer_max):
         print("=========================================================")
         print("========     Main DIIS implementation      ==============")
         gradient = h_vector * coeff**2 + coeff * ( conv @ (coeff * Phi) )
+        print("Norm(gradient):")
+        print(main_diis.norm_SCF(gradient))
+
         temp = calculate_overlap(gradient, Phi)
+        gradient -= temp @ Phi
+
+        print("Norm(gradient):")
+        print(main_diis.norm_SCF(gradient))
+
         symmetric_temp = 0.5 * (temp + temp.T)
         print("Asymmetry of grad_L = 0:")
         print(scipy.linalg.norm(temp - symmetric_temp))
@@ -482,6 +490,7 @@ for outer_index in range(outer_max):
         norm_f = update_equation_diis.calculate_norm_f()
         F_NORM[-1] = norm_f
         if norm_f > trust_radius:
+            newton_is_successful = False
             print("Outside trust region with norm of delta_Phi = ", norm_f)
             update_equation_diis.f_iterations[-1] *= trust_radius / norm_f
             for ind in range(N_orbitals):
