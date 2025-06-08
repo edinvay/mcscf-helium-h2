@@ -388,7 +388,8 @@ if molecule_state == 'excited':
 
 
 tolerance = np.sqrt(N_orbitals) * precision
-
+main_diis = DIIS(mra, Phi, MAX_HISTORY_SCF + 5)
+newton_is_successful = True
 
 
 for outer_index in range(outer_max):
@@ -406,6 +407,7 @@ for outer_index in range(outer_max):
             if epsilon_matrix[ind, ind] >= 0:
                 print("POSITIVE ORBITAL ENERGY:", epsilon_matrix[ind, ind])
                 epsilon_matrix[ind, ind] *= -1
+        newton_is_successful = False
     # Too expensive to recalculate:
     conv = supplementary_data[0]
     h_vector = supplementary_data[1]
@@ -414,13 +416,35 @@ for outer_index in range(outer_max):
     
     H_EIGENVALUE.append(H_eigenvalue)
     EPSILON.append(epsilon)
-    COEFF.append(H_eigenvector)
+    COEFF.append(H_eigenvector.copy())
 
     print("H_eigenvalue: ", H_eigenvalue)
     print("epsilon:      ", epsilon)
     epsilon = H_eigenvalue
     coeff = H_eigenvector
+
+    if newton_is_successful:
+        print("=========================================================")
+        print("========     Main DIIS implementation      ==============")
+        gradient = h_vector * coeff**2 + coeff * ( conv @ (coeff * Phi) )
+        temp = calculate_overlap(gradient, Phi)
+        symmetric_temp = 0.5 * (temp + temp.T)
+        print("Asymmetry of grad_L = 0:")
+        print(scipy.linalg.norm(temp - symmetric_temp))
+        temp = symmetric_temp
+        print("Lagrange multipliers update from grad_L = 0")
+        print(scipy.linalg.norm(temp - epsilon_matrix))
+        #epsilon_matrix = temp
+        gradient -= temp @ Phi
+        print("Norm(gradient):")
+        print(main_diis.norm_SCF(gradient))
+        print("Sanity of gradient:")
+        temp = calculate_overlap(gradient, Phi)
+        print(scipy.linalg.norm(temp))
+        print("=========================================================")
         
+
+
     v = None
     if molecule_state == 'excited':
         v = CI_optimiser.ground_vector(Phi)
@@ -486,7 +510,55 @@ for outer_index in range(outer_max):
     epsilon_matrix += delta_epsilon_coeff_epsilon_matrix[2]
     if molecule_state == 'excited':
         lamb += delta_epsilon_coeff_epsilon_matrix[3]
+    ############ Begin Sanity ###########
+    conv = supplementary_data[0]
+    h_vector = supplementary_data[1]
+
+    if newton_is_successful:
+        print("=========================================================")
+        print("========     Before Lowdin      =========================")
+        gradient = h_vector * coeff**2 + coeff * ( conv @ (coeff * Phi) )
+        temp = calculate_overlap(gradient, Phi)
+        symmetric_temp = 0.5 * (temp + temp.T)
+        print("Asymmetry of grad_L = 0:")
+        print(scipy.linalg.norm(temp - symmetric_temp))
+        temp = symmetric_temp
+        print("Lagrange multipliers update from grad_L = 0")
+        print(scipy.linalg.norm(temp - epsilon_matrix))
+        #epsilon_matrix = temp
+        gradient -= temp @ Phi
+        print("Norm(gradient):")
+        print(main_diis.norm_SCF(gradient))
+        print("Sanity of gradient:")
+        temp = calculate_overlap(gradient, Phi)
+        print(scipy.linalg.norm(temp))
+        print("=========================================================")
+    ############ End of Sanity ###########
     Phi, coeff = lowdin_orthonormalization(Phi, coeff)
+    ############ Begin Sanity ###########
+    conv = supplementary_data[0]
+    h_vector = supplementary_data[1]
+
+    if newton_is_successful:
+        print("=========================================================")
+        print("=========     After Lowdin      =========================")
+        gradient = h_vector * coeff**2 + coeff * ( conv @ (coeff * Phi) )
+        temp = calculate_overlap(gradient, Phi)
+        symmetric_temp = 0.5 * (temp + temp.T)
+        print("Asymmetry of grad_L = 0:")
+        print(scipy.linalg.norm(temp - symmetric_temp))
+        temp = symmetric_temp
+        print("Lagrange multipliers update from grad_L = 0")
+        print(scipy.linalg.norm(temp - epsilon_matrix))
+        #epsilon_matrix = temp
+        gradient -= temp @ Phi
+        print("Norm(gradient):")
+        print(main_diis.norm_SCF(gradient))
+        print("Sanity of gradient:")
+        temp = calculate_overlap(gradient, Phi)
+        print(scipy.linalg.norm(temp))
+        print("=========================================================")
+    ############ End of Sanity ###########
     for ind in range(N_orbitals):
         if epsilon_matrix[ind, ind] >= 0:
             print("POSITIVE ORBITAL ENERGY:", epsilon_matrix[ind, ind])
@@ -531,9 +603,34 @@ print(" ")
 print(f"Elapsed time: {end_calculations - start_calculations}")
 print(" ")
 
+############ Begin Sanity ###########
+conv = supplementary_data[0]
+h_vector = supplementary_data[1]
 
+if newton_is_successful:
+    print("=========================================================")
+    gradient = h_vector * coeff**2 + coeff * ( conv @ (coeff * Phi) )
+    temp = calculate_overlap(gradient, Phi)
+    symmetric_temp = 0.5 * (temp + temp.T)
+    print("Asymmetry of grad_L = 0:")
+    print(scipy.linalg.norm(temp - symmetric_temp))
+    temp = symmetric_temp
+    print("Lagrange multipliers update from grad_L = 0")
+    print(scipy.linalg.norm(temp - epsilon_matrix))
+    #epsilon_matrix = temp
+    gradient -= temp @ Phi
+    print("Norm(gradient):")
+    print(main_diis.norm_SCF(gradient))
+    print("Sanity of gradient:")
+    temp = calculate_overlap(gradient, Phi)
+    print(scipy.linalg.norm(temp))
+    print("=========================================================")
+############ End of Sanity ###########
 
-
+##
+for c_sanity in COEFF:
+    print(c_sanity)
+##
 improvement = {
     'molecule_name' : molecule_name,
     'coeff' :  coeff,

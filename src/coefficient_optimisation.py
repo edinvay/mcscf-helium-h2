@@ -74,7 +74,7 @@ class CoefficientOptimiser(object):
     def solve_eigenvalue_problem(self, H_matrix):
         H_eigenvalue, H_eigenvector = np.linalg.eigh(H_matrix)
         H_eigenvalue = H_eigenvalue[0]
-        H_eigenvector = H_eigenvector.T[0]
+        H_eigenvector = H_eigenvector[:, 0]
         H_eigenvector *= np.sign(H_eigenvector[0])
         return H_eigenvalue, H_eigenvector
 
