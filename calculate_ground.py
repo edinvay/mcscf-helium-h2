@@ -414,7 +414,7 @@ for outer_index in range(outer_max):
     
     H_EIGENVALUE.append(H_eigenvalue)
     EPSILON.append(epsilon)
-    COEFF.append(H_eigenvector)
+    COEFF.append(H_eigenvector.copy())
 
     print("H_eigenvalue: ", H_eigenvalue)
     print("epsilon:      ", epsilon)
