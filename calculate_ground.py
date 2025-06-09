@@ -425,12 +425,10 @@ for outer_index in range(outer_max):
         main_diis.x_iterations[-1], coeff_diis = lowdin_orthonormalization(main_diis.x_iterations[-1], coeff)
         H_eigenvalue_diis, H_eigenvector_diis, supplementary_data_diis = CI_optimiser.calculate_energy(main_diis.x_iterations[-1])
         if  H_eigenvalue_diis > H_eigenvalue: # + ZERO
-            print("DIIS is useless.")
-            del main_diis.x_iterations[-1]
-            del main_diis.f_iterations[-1]
-            del main_diis.g_iterations[-1]
+            print("DIIS is useless:", H_eigenvalue_diis - H_eigenvalue)
+            main_diis.x_iterations[-1] = Phi
         else:
-            print("DIIS is helpful.")
+            print("DIIS is helpful:", H_eigenvalue_diis - H_eigenvalue)
             H_eigenvalue = H_eigenvalue_diis
             H_eigenvector = H_eigenvector_diis
             supplementary_data = supplementary_data_diis
