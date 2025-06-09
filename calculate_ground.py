@@ -389,7 +389,7 @@ if molecule_state == 'excited':
 
 tolerance = np.sqrt(N_orbitals) * precision
 main_diis = DIIS(mra, Phi, MAX_HISTORY_SCF + 5)
-newton_is_successful = True
+newton_is_successful = False
 
 
 for outer_index in range(outer_max):
@@ -408,6 +408,36 @@ for outer_index in range(outer_max):
                 print("POSITIVE ORBITAL ENERGY:", epsilon_matrix[ind, ind])
                 epsilon_matrix[ind, ind] *= -1
         newton_is_successful = False
+    elif outer_index > 0:
+        newton_is_successful = True
+
+    if newton_is_successful:
+        print("=========================================================")
+        print("========     Main DIIS implementation      ==============")
+        main_diis.append_f_g(Phi, main_diis.x_iterations[-1] - Phi)
+        norm_f = main_diis.calculate_norm_f()
+        norm_g = main_diis.calculate_norm_g()
+        print("norm(g) = ", norm_g)
+        if norm_g < tolerance:
+            print("Precision is achieved at  =", outer_index)
+            break
+        main_diis.run()
+        main_diis.x_iterations[-1], coeff_diis = lowdin_orthonormalization(main_diis.x_iterations[-1], coeff)
+        H_eigenvalue_diis, H_eigenvector_diis, supplementary_data_diis = CI_optimiser.calculate_energy(main_diis.x_iterations[-1])
+        if  H_eigenvalue_diis > H_eigenvalue: # + ZERO
+            print("DIIS is useless.")
+            del main_diis.x_iterations[-1]
+            del main_diis.f_iterations[-1]
+            del main_diis.g_iterations[-1]
+        else:
+            print("DIIS is helpful.")
+            H_eigenvalue = H_eigenvalue_diis
+            H_eigenvector = H_eigenvector_diis
+            supplementary_data = supplementary_data_diis
+            Phi = main_diis.x_iterations[-1]
+        print("=========================================================")
+        
+
     # Too expensive to recalculate:
     conv = supplementary_data[0]
     h_vector = supplementary_data[1]
@@ -422,13 +452,6 @@ for outer_index in range(outer_max):
     print("epsilon:      ", epsilon)
     epsilon = H_eigenvalue
     coeff = H_eigenvector
-
-    if newton_is_successful:
-        print("=========================================================")
-        print("========     Main DIIS implementation      ==============")
-
-        print("=========================================================")
-        
 
 
     v = None
