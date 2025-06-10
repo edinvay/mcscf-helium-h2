@@ -1,12 +1,12 @@
 #!/bin/bash
 
-export OMP_NUM_THREADS=20
+export OMP_NUM_THREADS=12
 
 
 
 # H2
 mkdir -p experiments/h2
-for N_orbitals in {4..6}
+for N_orbitals in {1..6}
 do
     echo "======================="
     echo "Running H2 with N_orbitals = $N_orbitals"
