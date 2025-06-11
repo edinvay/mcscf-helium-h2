@@ -179,3 +179,4 @@ experiments/
 .DS_Store
 src/.DS_Store
 test.ipynb
+nohup.out
