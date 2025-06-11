@@ -12,7 +12,8 @@ print(" ")
 
 from input import molecule_state
 if molecule_state == 'excited':
-    raise ValueError(f"Invalid molecule_state: '{molecule_state}'. Must be 'ground', since 'excited' is not implemented yet.")
+    print("Attention: simple ground Newton in use!")
+    #raise ValueError(f"Invalid molecule_state: '{molecule_state}'. Must be 'ground', since 'excited' is not implemented yet.")
 
 
 #from input import precision
