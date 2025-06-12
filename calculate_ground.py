@@ -248,8 +248,8 @@ from functions import build_coefficient_matrix
 from functions import solve_symmetric_antisymmetric
 from functions import break_outer_loop
 
-print("TESTING break_outer_loop():")
-print(break_outer_loop( -1.3 * Guess_orbital, coeff, np.array([0, -0.0010, 1.5])[:N_orbitals], precision ))
+
+
 
 
 
@@ -399,6 +399,10 @@ for outer_index in range(outer_max):
     print(f"outer_index = {outer_index}")
     
     H_eigenvalue, H_eigenvector, supplementary_data = CI_optimiser.calculate_energy(Phi)
+
+    if outer_index > 0 and break_outer_loop(Phi - previous_Phi, H_eigenvector - COEFF[-1], H_eigenvector, precision):
+        break
+
     if outer_index > 0 and H_eigenvalue > H_EIGENVALUE[-1] + ZERO:
         print("H_eigenvalue > H_EIGENVALUE[-1]")
         Phi = previous_Phi
@@ -504,6 +508,7 @@ for outer_index in range(outer_max):
     print("coeff = ", coeff)
 
     if update_equation_diis.norm_SCF(delta_Phi) < tolerance:
+        print("Newton step is small: norm_SCF(delta_Phi) < tolerance")
         break
 
 
