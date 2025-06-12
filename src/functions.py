@@ -127,3 +127,17 @@ def solve_symmetric_antisymmetric(E, F):
     X = 0.5 * (F + F.T - E @ Y + Y @ E.T)
     
     return X, Y
+
+
+def break_outer_loop(delta_Phi, delta_coeff, coeff, precision):
+    norm_delta_Phi = np.array([ phi.norm() for phi in delta_Phi ])
+    norm_delta_coeff = np.abs(delta_coeff)
+    norm_coeff = np.abs(coeff)
+    print("TESTING break_outer_loop:")
+    print("norm_delta_Phi   = ", norm_delta_Phi)
+    print("norm_delta_coeff = ", norm_delta_coeff)
+    print("norm_coeff       = ", norm_coeff)
+    
+    res = np.max( norm_coeff * norm_delta_Phi )
+    res = max( res, np.max( norm_delta_coeff ) )
+    return res < precision
