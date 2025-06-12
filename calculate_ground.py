@@ -249,7 +249,7 @@ from functions import solve_symmetric_antisymmetric
 from functions import break_outer_loop
 
 print("TESTING break_outer_loop():")
-print(break_outer_loop(0,0,0,0))
+print(break_outer_loop( -1.3 * Guess_orbital, coeff, np.array([0, -0.0010, 1.5])[:N_orbitals], precision ))
 
 
 
