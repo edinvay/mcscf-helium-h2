@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export OMP_NUM_THREADS=12
+export OMP_NUM_THREADS=20
 
 
 
