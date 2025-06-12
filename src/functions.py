@@ -127,3 +127,7 @@ def solve_symmetric_antisymmetric(E, F):
     X = 0.5 * (F + F.T - E @ Y + Y @ E.T)
     
     return X, Y
+
+def break_outer_loop(delta_Phi, delta_coeff, coeff, precision):
+    res = 0
+    return res < 1

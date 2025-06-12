@@ -246,6 +246,10 @@ from operators import HelmholtzOperator
 
 from functions import build_coefficient_matrix
 from functions import solve_symmetric_antisymmetric
+from functions import break_outer_loop
+
+print("TESTING break_outer_loop():")
+print(break_outer_loop(0,0,0,0))
 
 
 
