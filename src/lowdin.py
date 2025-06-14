@@ -3,7 +3,14 @@ import numpy as np
 from input import molecule_state
 
 from scipy.optimize import minimize
-from scipy.linalg import fractional_matrix_power
+
+
+def fractional_matrix_power(A, p):
+    sigma, U = np.linalg.eigh(A)
+    # Avoid instabilities due to near-zero or negative eigenvalues
+    sigma = np.clip(sigma, 1e-12, None)
+    Sm5 = U @ np.diag(sigma**p) @ U.T
+    return Sm5
 
 
 def lowdin_orthonormalization(Phi, coeff):

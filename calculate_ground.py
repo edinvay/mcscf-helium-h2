@@ -150,7 +150,17 @@ for n in range(N_orbitals):
 
 
 Guess_orbital = np.array(Guess_orbital)
-coeff = np.array( [1.0] * len(Guess_orbital) )
+if molecule_state == 'excited':
+    file_name = 'guess_orbital_coefficients'
+    name = name_solution_file(
+        directory_name = experiments_directory + molecule_name,
+        file_name = file_name
+    )
+    with open(name + '.pkl', 'rb') as file:
+        data_dictionary = pickle.load(file)
+    coeff = data_dictionary['coeff'][:N_orbitals]
+else:
+    coeff = np.array( [1.0] * len(Guess_orbital) )
 Guess_orbital, coeff = lowdin_orthonormalization(Guess_orbital, coeff)
 
 
@@ -572,6 +582,12 @@ improvement = {
 }
 
 file_name = f"general_{N_orbitals}_orbital"
+if molecule_state == 'excited':
+    ground_orbitals_amount = len(CI_optimiser.Ground_coeff)
+    improvement['molecule_state'] = molecule_state
+    improvement['ground_orbitals_amount'] = ground_orbitals_amount
+    improvement['Ground_coeff'] = CI_optimiser.Ground_coeff
+    file_name += "(ground_" + str(ground_orbitals_amount) + ")"
 name = name_solution_file(
     directory_name = experiments_directory + molecule_name,
     file_name = file_name
