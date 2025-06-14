@@ -583,7 +583,11 @@ improvement = {
 
 file_name = f"general_{N_orbitals}_orbital"
 if molecule_state == 'excited':
-    file_name += "(ground_" + str(len(CI_optimiser.Ground_coeff)) + ")"
+    ground_orbitals_amount = len(CI_optimiser.Ground_coeff)
+    improvement['molecule_state'] = molecule_state
+    improvement['ground_orbitals_amount'] = ground_orbitals_amount
+    improvement['Ground_coeff'] = CI_optimiser.Ground_coeff
+    file_name += "(ground_" + str(ground_orbitals_amount) + ")"
 name = name_solution_file(
     directory_name = experiments_directory + molecule_name,
     file_name = file_name
