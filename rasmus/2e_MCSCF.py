@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import scipy as sp
 import matplotlib.pyplot as plt
@@ -49,7 +50,7 @@ def H2_stupid_initguess(l, r):
     R2 = np.sqrt((r[0]-r0)**2+r[1]**2+r[2]**2)
     L1 = gen_laguerre(l,1,2*Z*R1/(l+1))
     L2 = gen_laguerre(l,1,2*Z*R2/(l+1))
-    return L1*np.exp(-Z*R1/(l+1)) + R2**l*np.exp(-Z*R2/(l+1))
+    return L1*np.exp(-Z*R1/(l+1)) + L2*np.exp(-Z*R2/(l+1))
 
 
 def main():
@@ -63,25 +64,29 @@ def main():
             return H2_stupid_initguess(l,r)
         init_guess[l] = P_mra(initguess_function)
     V_nuc = P_mra(H2_potential)
-    print("Solving one-electron problem to use as initial guess.")
+    init_guess = orthonormalize(init_guess,L)
+    # ~ print("Solving one-electron problem to use as initial guess.")
     # ~ init_guess = one_el_eigenstates(L,V_nuc,init_guess)
-    init_guess = one_el_eigenstates(L+1,V_nuc,init_guess)
+    # Save inital guesses for orbitals
+    os.system(f"mkdir -p {L}_determinants")
+    for l in range(L):
+      init_guess[l].saveTree(f"{L}_determinants/initguess_{l}")
     x = np.linspace(x_min,x_max,2000)
     for psi in init_guess:
         y = [psi([xi,0,0]) for xi in x]
         plt.plot(x,y)
     plt.show()
-    for psi in init_guess:
-        plot_orbital(psi,-8,8)
+    # ~ for psi in init_guess:
+        # ~ plot_orbital(psi,-8,8)
     electrostatic_energy = 1/H2_dist
     Psi, coeff, E = MCSCF(L,V_nuc,init_guess,num_inner_iter,electrostatic_energy)
     print("Converged!")
     print(f"E = {E+electrostatic_energy}")
     print(f"c = {coeff}")
     print(f"Occupation numbers of natural orbitals =\n{2*coeff**2}")
-    # Save orbitals
+    # Save converged orbitals
     for l in range(L):
-        Psi[l].saveTree(f"orbital_{l}")
+        Psi[l].saveTree(f"{L}_determinants/orbital_{l}")
     # Plot orbitals
     x = np.linspace(x_min,x_max,2000)
     for psi in Psi:
@@ -300,8 +305,9 @@ def apply_greensfunction(Psi, eps, P, coeff, L):
     for l in range(L):
         if eps[l] > 0:
             print(f"Positive orbital energy = {eps[l]} for orbital {l}")
-            exit()
-        kappa = np.sqrt(-2*eps[l])
+            kappa = np.sqrt(2*eps[l]) # NOTE: Why does it work to multiply epsilon by -1?
+        else:
+            kappa = np.sqrt(-2*eps[l])
         G = vp.HelmholtzOperator(mra=MRA, exp=kappa, prec=prec)
         Phi2[l] = -2*G(Phi1[l])
     for l1 in range(L):
@@ -399,15 +405,11 @@ def one_el_eigenstates(N, V_nuc, init_guess):
         for n in range(N):
             if eps[n] > 0:
                 print(f"Positive orbital energy {eps[n]} for orbital {n}!")
-                # eps_0 = -0.1
-                # Phi[n] += (eps[n]-eps_0)*QPsi[n]
                 kappa = np.sqrt(2*eps[n])
-                G = vp.HelmholtzOperator(mra=MRA, exp=kappa, prec=prec)
-                psi_new = -2*G(Phi[n])
             else:
                 kappa = np.sqrt(-2*eps[n])
-                G = vp.HelmholtzOperator(mra=MRA, exp=kappa, prec=prec)
-                psi_new = -2*G(Phi[n])
+            G = vp.HelmholtzOperator(mra=MRA, exp=kappa, prec=prec)
+            psi_new = -2*G(Phi[n])
             Delta_psi = (psi_new-QPsi[n]).norm()
             print(f"Delta psi_{n} = {Delta_psi}")
             if Delta_psi > convergence_prec_initguess:
