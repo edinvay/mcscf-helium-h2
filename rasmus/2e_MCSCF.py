@@ -9,7 +9,8 @@ x_max =  20
 box = [x_min,x_max]
 poly_order = 5
 prec = 1e-4
-convergence_prec = prec
+convergence_prec = 10*prec
+convergence_prec_initguess = 10*prec
 coulombpotential_regularizer = 0.001 # Regularize Coulomb potential with Boys function 1/r ≈ 2/sqrt(pi)*F_0(r^2/reg^2)
 
 MRA = vp.MultiResolutionAnalysis(box=box, order=poly_order)
@@ -22,7 +23,7 @@ def He_potential(r):
     R = np.sqrt(r[0]**2+r[1]**2+r[2]**2)
     return -Z*sp.special.erf(R/coulombpotential_regularizer)/R
 
-def He_initguess(l,r):
+def He_initguess(l, r):
     # R1 = np.sqrt(r[0]**2+r[1]**2+r[2]**2)
     # return np.exp(-R1/(l+1)) + np.exp(-R2/(l+1))
     return hydrogen_orbital(l,2,r)
@@ -37,27 +38,50 @@ def H2_potential(r):
     V = -Z*sp.special.erf(R1/coulombpotential_regularizer)/R1 - Z*sp.special.erf(R2/coulombpotential_regularizer)/R2
     return V
 
-def H2_initguess(l,r):
+def H2_initguess(l, r):
+    r0 = H2_dist/2
+    return hydrogen_orbital(l,1,[r[0]+r0,r[1],r[2]]) + hydrogen_orbital(l,1,[r[0]-r0,r[1],r[2]])
+
+def H2_stupid_initguess(l, r):
+    Z = 1
     r0 = H2_dist/2
     R1 = np.sqrt((r[0]+r0)**2+r[1]**2+r[2]**2)
     R2 = np.sqrt((r[0]-r0)**2+r[1]**2+r[2]**2)
-    return np.exp(-0.5*R1/(l+1)) + np.exp(-0.5*R2/(l+1))
-    # return hydrogen_orbital(l,1,[r[0]+r0,r[1],r[2]]) + hydrogen_orbital(l,1,[r[0]-r0,r[1],r[2]])
+    L1 = gen_laguerre(l,1,2*Z*R1/(l+1))
+    L2 = gen_laguerre(l,1,2*Z*R2/(l+1))
+    return L1*np.exp(-Z*R1/(l+1)) + R2**l*np.exp(-Z*R2/(l+1))
+
 
 def main():
     L = 6
     num_inner_iter = 2
-    init_guess = np.empty(L,dtype=object)
-    for l in range(L):
+    # ~ init_guess = np.empty(L,dtype=object)
+    init_guess = np.empty(L+1,dtype=object)
+    # ~ for l in range(L):
+    for l in range(L+1):
         def initguess_function(r):
-            return He_initguess(l,r)
+            return H2_stupid_initguess(l,r)
         init_guess[l] = P_mra(initguess_function)
-    electrostatic_energy = 0
-    V_nuc = P_mra(He_potential)
-    Psi = MCSCF(L,V_nuc,init_guess,num_inner_iter,electrostatic_energy)
+    V_nuc = P_mra(H2_potential)
+    print("Solving one-electron problem to use as initial guess.")
+    # ~ init_guess = one_el_eigenstates(L,V_nuc,init_guess)
+    init_guess = one_el_eigenstates(L+1,V_nuc,init_guess)
+    x = np.linspace(x_min,x_max,2000)
+    for psi in init_guess:
+        y = [psi([xi,0,0]) for xi in x]
+        plt.plot(x,y)
+    plt.show()
+    for psi in init_guess:
+        plot_orbital(psi,-8,8)
+    electrostatic_energy = 1/H2_dist
+    Psi, coeff, E = MCSCF(L,V_nuc,init_guess,num_inner_iter,electrostatic_energy)
+    print("Converged!")
+    print(f"E = {E+electrostatic_energy}")
+    print(f"c = {coeff}")
+    print(f"Occupation numbers of natural orbitals =\n{2*coeff**2}")
     # Save orbitals
-    for l, psi in enumerate(Psi):
-        psi.saveTree(f"orbital_{l}")
+    for l in range(L):
+        Psi[l].saveTree(f"orbital_{l}")
     # Plot orbitals
     x = np.linspace(x_min,x_max,2000)
     for psi in Psi:
@@ -65,7 +89,7 @@ def main():
         plt.plot(x,y)
     plt.show()
     for psi in Psi:
-        plot_orbital(psi,-7,7)
+        plot_orbital(psi,-8,8)
     return
 
 def MCSCF(L, V_nuc, init_guess, num_inner_iter, electrostatic_energy):
@@ -73,7 +97,7 @@ def MCSCF(L, V_nuc, init_guess, num_inner_iter, electrostatic_energy):
     x = np.linspace(x_min,x_max,2000)
     max_num_iter = 1000
     for k in range(max_num_iter):
-        num_inner_iter = 1 if k < 5 else 3
+        num_inner_iter = 1 if k < 4 else 5
         if k == 0:
             print("Initial guess")
         else:
@@ -89,24 +113,40 @@ def MCSCF(L, V_nuc, init_guess, num_inner_iter, electrostatic_energy):
         E, c = configuration_interaction(h,PsiPsi,J,L)
         print(f"E = {E+electrostatic_energy}")
         print(f"c = {c}")
-        # Perform Newton step
-        Psi, DeltaPsi_norm = newton_step(Psi,c,E,h,V_nuc,V_nucPsi,J,L,num_inner_iter)
-        Psi = orthonormalize(Psi,L)
-        for psi in Psi:
-            psi.crop(prec)
+        # Compute K*Psi
+        KPsi = np.empty(L,dtype=object)
+        for l1 in range(L):
+            KPsi[l1] = vp.ZeroTree(MRA)
+            for l2 in range(L):
+                KPsi[l1] += c[l2]*(J[l2,l1]*Psi[l2])
+        # Compute epsilon matrix
+        eps_mat = E*np.identity(L) - h
         # Test convergence
-        if all(DeltaPsi_norm <= convergence_prec):
-            for l in range(L):
-                V_nucPsi[l] = V_nuc*Psi[l]
+        converged = True
+        for l1 in range(L):
+            phi = V_nucPsi[l1] + (1/c[l1])*KPsi[l1]
+            for l2 in range(L):
+                if l1 != l2:
+                    phi -= (c[l2]/c[l1]*eps_mat[l2,l1])*Psi[l2]
+            kappa = np.sqrt(-2*eps_mat[l1,l1])
+            G = vp.HelmholtzOperator(mra=MRA, exp=kappa, prec=prec)
+            psi_test = -2*G(phi)
+            Delta_psi_test = (psi_test-Psi[l1]).norm()
+            print(f"Delta_psi_test = {Delta_psi_test}")
+            if Delta_psi_test > convergence_prec:
+                converged = False
+                break
+        if converged:
             h = compute_h(Psi,V_nucPsi,L)
             PsiPsi = compute_PsiPsi(Psi,L)
             J = compute_J(PsiPsi,L)
             E, c = configuration_interaction(h,PsiPsi,J,L)
-            print("Converged!")
-            print(f"E = {E+electrostatic_energy}")
-            print(f"c = {c}")
-            print(f"Occupation numbers of natural orbitals =\n{2*c**2}")
-            return Psi
+            return Psi, c, E
+        # Perform Newton step
+        Psi, DeltaPsi_norm = newton_step(Psi,c,eps_mat,h,V_nuc,V_nucPsi,KPsi,J,L,num_inner_iter)
+        Psi = orthonormalize(Psi,L)
+        for psi in Psi:
+            psi.crop(prec)
         print()
 
 
@@ -164,8 +204,7 @@ def configuration_interaction(h, PsiPsi, J, L):
     return E[0], C[:,0]
 
 
-def newton_step(Psi, coeff, E, h, V_nuc, V_nucPsi, J, L, num_iter):
-    eps_mat = E*np.identity(L) - h
+def newton_step(Psi, coeff, eps_mat, h, V_nuc, V_nucPsi, KPsi, J, L, num_iter):
     print(f"epsilon =\n{eps_mat}")
     # print(f"|epsilon|       = {np.linalg.norm(eps_mat,ord=2)}")
     # print(f"|diag(epsilon)| = {np.linalg.norm(np.diag(np.diag(eps_mat)),ord=2)}")
@@ -173,11 +212,6 @@ def newton_step(Psi, coeff, E, h, V_nuc, V_nucPsi, J, L, num_iter):
     for l1 in range(L):
         for l2 in range(L):
             norm_eps_mat[l1,l2] = (coeff[l1]*coeff[l2])*eps_mat[l1,l2]
-    KPsi = np.empty(L,dtype=object)
-    for l1 in range(L):
-        KPsi[l1] = vp.ZeroTree(MRA)
-        for l2 in range(L):
-            KPsi[l1] += coeff[l2]*(J[l2,l1]*Psi[l2])
     # Compute matrix E0
     E0 = np.empty([L,L])
     for l1 in range(L):
@@ -186,14 +220,13 @@ def newton_step(Psi, coeff, E, h, V_nuc, V_nucPsi, J, L, num_iter):
     # Compute Delta_eps_mat
     norm_eps, Q = np.linalg.eigh(norm_eps_mat)
     Delta_eps_mat = compute_Delta_epsilon(E0,norm_eps,Q,coeff,L)
-    # Apply Green's function
     Phi = np.empty(L,dtype=object)
     for l1 in range(L):
         Phi[l1] = coeff[l1]*V_nucPsi[l1] + KPsi[l1]
         for l2 in range(L):
             Phi[l1] -= (coeff[l2]*Delta_eps_mat[l2,l1])*Psi[l2]
     eps, P = np.linalg.eigh(eps_mat)
-    print(f"E0 =\n{E0}")
+    # print(f"E0 =\n{E0}")
     print("Inner iteration 1")
     print("--------------------")
     print(f"|Delta epsilon|/|epsilon| = {np.linalg.norm(Delta_eps_mat,ord=2)/np.linalg.norm(eps_mat,ord=2)}")
@@ -205,7 +238,7 @@ def newton_step(Psi, coeff, E, h, V_nuc, V_nucPsi, J, L, num_iter):
     DeltaPsi0_norm = np.array([psi.norm() for psi in DeltaPsi])
     print(f"|DeltaPsi| =\n{DeltaPsi0_norm}")
     Y = compute_Y(Psi,DeltaPsi,L)
-    print(f"Y =\n{Y}")
+    # print(f"Y =\n{Y}")
     # Remaining inner iterations
     for k in range(num_iter-1):
         print(f"Inner iteration {k+2}")
@@ -253,7 +286,7 @@ def newton_step(Psi, coeff, E, h, V_nuc, V_nucPsi, J, L, num_iter):
         DeltaPsi_norm = np.array([psi.norm() for psi in DeltaPsi])
         print(f"|DeltaPsi| =\n{DeltaPsi_norm}")
         Y = compute_Y(Psi,DeltaPsi,L)
-        print(f"Y =\n{Y}")
+        # print(f"Y =\n{Y}")
     return Psi_next, DeltaPsi0_norm
 
 
@@ -337,6 +370,57 @@ def hydrogen_orbital_quantum_numbers(k):
                 count += 1
         n += 1
 
+
+def one_el_eigenstates(N, V_nuc, init_guess):
+    Psi = orthonormalize(init_guess,N)
+    for psi in Psi:
+            psi.crop(prec)
+    max_num_iter = 1000
+    for k in range(max_num_iter):
+        print(f"Iteration {k+1}")
+        # Compute h matrix
+        V_nucPsi = np.empty(N,dtype=object)
+        for n in range(N):
+            V_nucPsi[n] = V_nuc*Psi[n]
+        h = compute_h(Psi,V_nucPsi,N)
+        # Diagonalize h
+        eps, Q = np.linalg.eigh(h)
+        print(f"Orbital energies =\n{eps}")
+        Phi = np.empty(N,dtype=object)
+        QPsi = np.empty(N,dtype=object)
+        for n1 in range(N):
+            Phi[n1] = vp.ZeroTree(MRA)
+            QPsi[n1] = vp.ZeroTree(MRA)
+            for n2 in range(N):
+                Phi[n1] += Q[n2,n1]*V_nucPsi[n2]
+                QPsi[n1] += Q[n2,n1]*Psi[n2]
+        # Apply Green's function and test convergence
+        converged = True
+        for n in range(N):
+            if eps[n] > 0:
+                print(f"Positive orbital energy {eps[n]} for orbital {n}!")
+                # eps_0 = -0.1
+                # Phi[n] += (eps[n]-eps_0)*QPsi[n]
+                kappa = np.sqrt(2*eps[n])
+                G = vp.HelmholtzOperator(mra=MRA, exp=kappa, prec=prec)
+                psi_new = -2*G(Phi[n])
+            else:
+                kappa = np.sqrt(-2*eps[n])
+                G = vp.HelmholtzOperator(mra=MRA, exp=kappa, prec=prec)
+                psi_new = -2*G(Phi[n])
+            Delta_psi = (psi_new-QPsi[n]).norm()
+            print(f"Delta psi_{n} = {Delta_psi}")
+            if Delta_psi > convergence_prec_initguess:
+                converged = False
+            Psi[n] = psi_new
+        Psi = orthonormalize(Psi,N)
+        for psi in Psi:
+            psi.crop(prec)
+        print()
+        if converged:
+            return Psi
+
+
 def hydrogen_orbital(k, Z, r):
     """
     Evaluates k-th (starting at k=0) non-relativistic hydrogen-like orbital with atom number Z
@@ -353,6 +437,7 @@ def hydrogen_orbital(k, Z, r):
     L = gen_laguerre(n-l-1,2*l+1,2*Z*R/n)
     psi = Y*R**l*L*np.exp(-Z*R/n)
     return psi
+
 
 def gen_laguerre(deg, alpha, x):
     """
@@ -392,8 +477,8 @@ def plot_orbital(psi, x_min, x_max):
     fig = go.Figure(data=go.Isosurface(
         x=X, y=Y, z=Z,
         value=rho,
-        isomin=-0.01,
-        isomax=0.01,
+        isomin=-0.001,
+        isomax=0.001,
         surface_count=2,
         caps=dict(x_show=False, y_show=False, z_show=False),
         colorscale=[  # Red = negative, Blue = positive
@@ -415,6 +500,13 @@ def plot_orbital(psi, x_min, x_max):
     )
     fig.show()
 
+
+def plot_saved_orbitals(L):
+    for l in range(L):
+        psi = vp.ZeroTree(MRA)
+        psi.loadTree(f"orbital_{l}")
+        plot_orbital(psi,-8,8)
+    
 
 
 main()
