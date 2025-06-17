@@ -6,15 +6,15 @@ ZERO = 1.0e-10                      #default: 1.0e-10
 
 MAX_HISTORY_SCF = 3                 #default: 3
 
-outer_max = 5                     #default: 100
-inner_max = 5                      #default: 15
+outer_max = 2                     #default: 100
+inner_max = 2                      #default: 15
 trust_radius = 1.0                  #default: 0.5
 epsilon_matrix_correction_max =  0  #default: 10
 
 
 
-molecule_state = 'ground'
-#molecule_state = 'excited'
+#molecule_state = 'ground'
+molecule_state = 'excited'
 
 # Fill in the location to the ground state
 if molecule_state == 'excited':
