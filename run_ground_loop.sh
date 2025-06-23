@@ -6,7 +6,7 @@ export OMP_NUM_THREADS=20
 
 # H2
 mkdir -p experiments/h2
-for N_orbitals in {17..17}
+for N_orbitals in {1..16}
 do
     echo "======================="
     echo "Running H2 with N_orbitals = $N_orbitals"
@@ -18,7 +18,7 @@ done
 
 # He
 mkdir -p experiments/helium
-for N_orbitals in {17..17}
+for N_orbitals in {1..16}
 do
     echo "======================="
     echo "Running He with N_orbitals = $N_orbitals"
